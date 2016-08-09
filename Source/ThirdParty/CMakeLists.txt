@@ -38,6 +38,7 @@ if (NOT IOS AND NOT ANDROID AND NOT EMSCRIPTEN)
     add_subdirectory(Poco)
     add_subdirectory(nativefiledialog)
     add_subdirectory(libsquish)
+    add_subdirectory(thekla)
 endif ()
 
 if (LINUX OR APPLE AND NOT IOS)

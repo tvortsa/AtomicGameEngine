@@ -3,6 +3,9 @@ project (Atomic)
 
 cmake_minimum_required(VERSION 2.8.12.1)
 
+set(ATOMIC_CXX_FLAGS_DEFAULT ${CMAKE_CXX_FLAGS})
+set(ATOMIC_C_FLAGS_DEFAULT ${CMAKE_C_FLAGS})
+
 set (CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/Build/CMake/Modules)
 
 include(AtomicUtils)
