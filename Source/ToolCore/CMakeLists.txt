@@ -15,7 +15,7 @@ endif()
 
 add_library(ToolCore ${SOURCE_FILES})
 
-target_link_libraries(ToolCore Assimp Poco libcurl)
+target_link_libraries(ToolCore Assimp Poco libcurl thekla_atlas)
 
 GroupSources("Assets")
 GroupSources("Build")
