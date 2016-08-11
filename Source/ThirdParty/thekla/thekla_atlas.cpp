@@ -345,6 +345,134 @@ void Thekla::atlas_reorder_faces(Atlas_Output_Mesh * atlas_mesh, const char* out
     atlas_mesh->index_array = indices;
 }
 
+void Thekla::atlas_write_debug_textures(const Atlas_Output_Mesh * atlas_mesh,
+                                        const Atlas_Input_Mesh * obj_mesh,
+                                        const char* worldSpaceTexturePath,
+                                        const char* normalTexturePath,
+                                        uint8_t** pchartids)
+{
+
+    Vector3 minp(FLT_MAX);
+    Vector3 maxp(FLT_MIN);
+    for (int nvert = 0; nvert < atlas_mesh->vertex_count; nvert++) {
+        const Atlas_Output_Vertex& overt = atlas_mesh->vertex_array[nvert];
+        const Atlas_Input_Vertex& ivert = obj_mesh->vertex_array[overt.xref];
+        minp.x = nv::min(ivert.position[0], minp.x);
+        minp.y = nv::min(ivert.position[1], minp.y);
+        minp.z = nv::min(ivert.position[2], minp.z);
+        maxp.x = nv::max(ivert.position[0], maxp.x);
+        maxp.y = nv::max(ivert.position[1], maxp.y);
+        maxp.z = nv::max(ivert.position[2], maxp.z);
+    }
+    // Create an image representing the charts, with color representing the
+    // approximate world-space position of each source vertex.
+    int width = atlas_mesh->atlas_width;
+    int height = atlas_mesh->atlas_height;
+    const Vector2 extents(width, height);
+    unsigned char* colors = (unsigned char*) calloc(width * height * 3, 1);
+    uint8_t* chartids = pchartids ? (uint8_t*) calloc(width * height, 1) : 0;
+    float* floats = (float*) calloc(width * height * sizeof(float) * 3, 1);
+    const int* patlasIndex = atlas_mesh->index_array;
+    Vector2 triverts[3];
+    ShaderData shaderdata;
+    shaderdata.width = width;
+    shaderdata.data = colors;
+    shaderdata.floats = floats;
+    shaderdata.chartids = chartids;
+    Vector3 objextent = maxp - minp;
+    Vector3 offset = -minp;
+    float objmextent = nv::max(nv::max(objextent.x, objextent.y), objextent.z);
+    float scale = 1.0f / objmextent;
+    for (int nface = 0; nface < atlas_mesh->index_count / 3; nface++) {
+        Atlas_Output_Vertex& a = atlas_mesh->vertex_array[*patlasIndex++];
+        Atlas_Output_Vertex& b = atlas_mesh->vertex_array[*patlasIndex++];
+        Atlas_Output_Vertex& c = atlas_mesh->vertex_array[*patlasIndex++];
+        Atlas_Input_Vertex& i = obj_mesh->vertex_array[a.xref];
+        Atlas_Input_Vertex& j = obj_mesh->vertex_array[b.xref];
+        Atlas_Input_Vertex& k = obj_mesh->vertex_array[c.xref];
+        triverts[0].x = a.uv[0];
+        triverts[0].y = a.uv[1];
+        triverts[1].x = b.uv[0];
+        triverts[1].y = b.uv[1];
+        triverts[2].x = c.uv[0];
+        triverts[2].y = c.uv[1];
+
+        if (pchartids) {
+            shaderdata.chartid = a.chart_index + 1;
+            Raster::drawTriangle(true, extents, true, triverts, idSolidCallback, &shaderdata);
+        }
+
+        shaderdata.objspace[0].x = (i.position[0] + offset.x) * scale;
+        shaderdata.objspace[0].y = (i.position[1] + offset.y) * scale;
+        shaderdata.objspace[0].z = (i.position[2] + offset.z) * scale;
+        shaderdata.objspace[1].x = (j.position[0] + offset.x) * scale;
+        shaderdata.objspace[1].y = (j.position[1] + offset.y) * scale;
+        shaderdata.objspace[1].z = (j.position[2] + offset.z) * scale;
+        shaderdata.objspace[2].x = (k.position[0] + offset.x) * scale;
+        shaderdata.objspace[2].y = (k.position[1] + offset.y) * scale;
+        shaderdata.objspace[2].z = (k.position[2] + offset.z) * scale;
+        Raster::drawTriangle(true, extents, true, triverts, pngAtlasCallback, &shaderdata);
+
+        shaderdata.objspace[0].x = i.position[0];
+        shaderdata.objspace[0].y = i.position[1];
+        shaderdata.objspace[0].z = i.position[2];
+        shaderdata.objspace[1].x = j.position[0];
+        shaderdata.objspace[1].y = j.position[1];
+        shaderdata.objspace[1].z = j.position[2];
+        shaderdata.objspace[2].x = k.position[0];
+        shaderdata.objspace[2].y = k.position[1];
+        shaderdata.objspace[2].z = k.position[2];
+        Raster::drawTriangle(true, extents, true, triverts, floatAtlasCallback, &shaderdata);
+    }
+
+    stbi_write_png(worldSpaceTexturePath, width, height, 3, colors, 0);
+
+    // Create an image representing facet normals.
+    shaderdata.floats = floats = (float*) calloc(width * height * sizeof(float) * 3, 1);
+    patlasIndex = atlas_mesh->index_array;
+    for (int nface = 0; nface < atlas_mesh->index_count / 3; nface++) {
+        Atlas_Output_Vertex& a = atlas_mesh->vertex_array[*patlasIndex++];
+        Atlas_Output_Vertex& b = atlas_mesh->vertex_array[*patlasIndex++];
+        Atlas_Output_Vertex& c = atlas_mesh->vertex_array[*patlasIndex++];
+        Atlas_Input_Vertex& i = obj_mesh->vertex_array[a.xref];
+        Atlas_Input_Vertex& j = obj_mesh->vertex_array[b.xref];
+        Atlas_Input_Vertex& k = obj_mesh->vertex_array[c.xref];
+        triverts[0].x = a.uv[0];
+        triverts[0].y = a.uv[1];
+        triverts[1].x = b.uv[0];
+        triverts[1].y = b.uv[1];
+        triverts[2].x = c.uv[0];
+        triverts[2].y = c.uv[1];
+        shaderdata.objspace[0].x = i.position[0];
+        shaderdata.objspace[0].y = i.position[1];
+        shaderdata.objspace[0].z = i.position[2];
+        shaderdata.objspace[1].x = j.position[0];
+        shaderdata.objspace[1].y = j.position[1];
+        shaderdata.objspace[1].z = j.position[2];
+        shaderdata.objspace[2].x = k.position[0];
+        shaderdata.objspace[2].y = k.position[1];
+        shaderdata.objspace[2].z = k.position[2];
+        Vector3 A = shaderdata.objspace[1] - shaderdata.objspace[0];
+        Vector3 B = shaderdata.objspace[2] - shaderdata.objspace[0];
+        Vector3 N1 = normalize(cross(A, B));
+        Vector3 N2 = 0.5f * (N1 + Vector3(1, 1, 1));
+        shaderdata.color[0] = N2.x * 255;
+        shaderdata.color[1] = N2.y * 255;
+        shaderdata.color[2] = N2.z * 255;
+        Raster::drawTriangle(true, extents, true, triverts, pngSolidCallback, &shaderdata);
+
+        shaderdata.fpcolor[0] = N1.x;
+        shaderdata.fpcolor[1] = N1.y;
+        shaderdata.fpcolor[2] = N1.z;
+        Raster::drawTriangle(true, extents, true, triverts, floatSolidCallback, &shaderdata);
+    }
+
+    stbi_write_png(normalTexturePath, width, height, 3, colors, 0);
+
+
+}
+
+
 void Thekla::atlas_dump(
     const Atlas_Output_Mesh * atlas_mesh,
     const Atlas_Input_Mesh * obj_mesh,

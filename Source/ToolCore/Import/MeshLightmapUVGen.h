@@ -1,17 +1,22 @@
 
 #pragma once
 
-#include <Atomic/Graphics/Model.h>
-
-namespace Atomic
-{
-    class Geometry;
-}
+#include "ModelPacker.h"
 
 using namespace Atomic;
 
+namespace Thekla
+{
+
+struct Atlas_Output_Mesh;
+struct Atlas_Input_Mesh;
+
+}
+
 namespace ToolCore
 {
+
+class ModelPacker;
 
 class MeshLightmapUVGen
 {
@@ -20,6 +25,12 @@ public:
 
     struct Settings
     {
+        bool genChartID_;
+
+        Settings()
+        {
+            genChartID_ = false;
+        }
 
     };
 
@@ -29,24 +40,26 @@ public:
 
 private:
 
-    class LightmapMesh
+    void WriteLightmapUVCoords();
+
+    struct LMVertex
     {
-
-
-private:
-
-        Geometry* geometry_;
-
-        // in global UV
-        unsigned vertexStart_;
-        unsigned vertexCount_;
+        MPGeometry* geometry_;
+        unsigned geometryIdx_;
+        unsigned originalVertex_;
     };
 
     SharedPtr<Model> model_;
+    SharedPtr<ModelPacker> modelPacker_;
 
-    PODVector<LightmapMesh*> lightmapMeshes_;
+    SharedPtr<MPLODLevel> curLOD_;
 
-    Settings setting_;
+    SharedArrayPtr<LMVertex> lmVertices_;
+
+    Settings settings_;
+
+    Thekla::Atlas_Output_Mesh* tOutputMesh_;
+    Thekla::Atlas_Input_Mesh* tInputMesh_;
 
 };
 

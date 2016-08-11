@@ -111,6 +111,12 @@ void atlas_dump(
     uint8_t** pchartids,
     int size[2]);
 
+void atlas_write_debug_textures(const Atlas_Output_Mesh * atlas_mesh,
+                                const Atlas_Input_Mesh * obj_mesh,
+                                const char* worldSpaceTexturePath,
+                                const char* normalTexturePath,
+                                uint8_t** pchartids = 0);
+
 void atlas_free(Atlas_Output_Mesh * output);
 
 }
