@@ -11,14 +11,19 @@ namespace  ToolCore
 {
 
 
-MeshLightmapUVGen::MeshLightmapUVGen(Model* model, const Settings& settings) :
+MeshLightmapUVGen::MeshLightmapUVGen(Context* context, Model* model, const Settings& settings) : Object(context),
     model_(model),
-    modelPacker_(new ModelPacker),
+    modelPacker_(new ModelPacker(context)),
     settings_(settings),
     tOutputMesh_(0),
     tInputMesh_(0)
 {
 
+
+}
+
+MeshLightmapUVGen::~MeshLightmapUVGen()
+{
 
 }
 
@@ -62,6 +67,9 @@ void MeshLightmapUVGen::WriteLightmapUVCoords()
         if ((v2 + 1) >= vertexCounts[geometryIdx])
             vertexCounts[geometryIdx] = v2 + 1;
     }
+
+    float uscale = 1.f / tOutputMesh_->atlas_width;
+    float vscale = 1.f / tOutputMesh_->atlas_height;
 
     for (unsigned i = 0; i < curLOD_->mpGeometry_.Size(); i++)
     {
@@ -108,7 +116,7 @@ void MeshLightmapUVGen::WriteLightmapUVCoords()
             {
                 // we haven't mapped this vertice
                 nVertices[curVertex] = mpGeo->vertices_[lv0.originalVertex_];
-                nVertices[curVertex].uv1_ = Vector2(tv0.uv[0], tv0.uv[1]);
+                nVertices[curVertex].uv1_ = Vector2(tv0.uv[0] * uscale, tv0.uv[1] * vscale);
                 mappedVertices[v0] = curVertex;
                 v0 = curVertex++;
             }
@@ -121,7 +129,7 @@ void MeshLightmapUVGen::WriteLightmapUVCoords()
             {
                 // we haven't mapped this vertice
                 nVertices[curVertex] = mpGeo->vertices_[lv1.originalVertex_];
-                nVertices[curVertex].uv1_ = Vector2(tv1.uv[0], tv1.uv[1]);
+                nVertices[curVertex].uv1_ = Vector2(tv1.uv[0] * uscale,  tv1.uv[1] * vscale);
                 mappedVertices[v1] = curVertex;
                 v1 = curVertex++;
             }
@@ -134,7 +142,7 @@ void MeshLightmapUVGen::WriteLightmapUVCoords()
             {
                 // we haven't mapped this vertice
                 nVertices[curVertex] = mpGeo->vertices_[lv2.originalVertex_];
-                nVertices[curVertex].uv1_ = Vector2(tv2.uv[0], tv2.uv[1]);
+                nVertices[curVertex].uv1_ = Vector2(tv2.uv[0] * uscale, tv2.uv[1] * vscale);
                 mappedVertices[v2] = curVertex;
                 v2 = curVertex++;
             }
@@ -174,18 +182,14 @@ void MeshLightmapUVGen::WriteLightmapUVCoords()
 
                 nElements.Push(element);
 
-                if ( (element.type_ == TYPE_VECTOR2 && element.semantic_ == SEM_TEXCOORD) || (!added && j == mpGeo->elements_.Size()) )
+                if ( (element.type_ == TYPE_VECTOR2 && element.semantic_ == SEM_TEXCOORD) || (!added && j == (mpGeo->elements_.Size() - 1) ) )
                 {
                     added = true;
-                    VertexElement element(TYPE_VECTOR2, SEM_TEXCOORD);
+                    VertexElement element(TYPE_VECTOR2, SEM_TEXCOORD, 1);
                     nElements.Push(element);
                 }
 
             }
-
-            // renumber
-            for (unsigned j = 0; j < nElements.Size(); j++)
-                nElements[j].index_ = j;
 
             mpGeo->elements_ = nElements;
         }
@@ -309,6 +313,9 @@ bool MeshLightmapUVGen::Generate()
         tOutputMesh_ = 0;
 
     }
+
+    // update model
+    modelPacker_->Pack();
 
     return true;
 

@@ -18,8 +18,9 @@ namespace ToolCore
 
 class ModelPacker;
 
-class MeshLightmapUVGen
+class MeshLightmapUVGen : public Object
 {
+    ATOMIC_OBJECT(MeshLightmapUVGen, Object)
 
 public:
 
@@ -34,7 +35,8 @@ public:
 
     };
 
-    MeshLightmapUVGen(Model* model, const Settings& settings);
+    MeshLightmapUVGen(Context* context, Model* model, const Settings& settings);
+    virtual ~MeshLightmapUVGen();
 
     bool Generate();
 

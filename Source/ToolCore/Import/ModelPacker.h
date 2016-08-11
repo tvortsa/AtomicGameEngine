@@ -17,6 +17,7 @@ struct MPVertex
     Vector3 position_;
     Vector3 normal_;
     Vector4 tangent_;
+    unsigned color_;
     Vector2 uv0_;
     Vector2 uv1_;
 };
@@ -47,13 +48,18 @@ public:
 };
 
 /// Model packer/unpacker from/to packed representation (destructive!)
-class ModelPacker : public RefCounted
+class ModelPacker : public Object
 {
-    ATOMIC_REFCOUNTED(ModelPacker)
+    ATOMIC_OBJECT(ModelPacker, Object)
 
 public:
 
+    ModelPacker(Context* context);
+    virtual ~ModelPacker();
+
     bool Unpack(Model* model);
+
+    bool Pack();
 
     const String& GetErrorText() const { return errorText_; }
 
