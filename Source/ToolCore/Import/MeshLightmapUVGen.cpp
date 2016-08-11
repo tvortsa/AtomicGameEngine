@@ -11,8 +11,9 @@ namespace  ToolCore
 {
 
 
-MeshLightmapUVGen::MeshLightmapUVGen(Context* context, Model* model, const Settings& settings) : Object(context),
+MeshLightmapUVGen::MeshLightmapUVGen(Context* context, Model* model, const String& modelName, const Settings& settings) : Object(context),
     model_(model),
+    modelName_(modelName),
     modelPacker_(new ModelPacker(context)),
     settings_(settings),
     tOutputMesh_(0),
@@ -29,7 +30,14 @@ MeshLightmapUVGen::~MeshLightmapUVGen()
 
 void MeshLightmapUVGen::WriteLightmapUVCoords()
 {
-    Thekla::atlas_write_debug_textures(tOutputMesh_, tInputMesh_, "/Users/jenge/Desktop/lmWorldSpaceTexture.png", "/Users/jenge/Desktop/lmNormalTexture.png");
+
+    String modelName = modelName_;
+
+    if (!modelName.Length())
+        modelName = "AnonymousModel";
+
+    Thekla::atlas_write_debug_textures(tOutputMesh_, tInputMesh_, ToString("/Users/jenge/Desktop/%s_lmWorldSpaceTexture.png", modelName.CString()).CString() ,
+                                                                  ToString("/Users/jenge/Desktop/%s_lmNormalTexture.png", modelName.CString()).CString() );
 
     SharedArrayPtr<unsigned> vertexCounts(new unsigned[curLOD_->mpGeometry_.Size()]);
     SharedArrayPtr<unsigned> indexCounts(new unsigned[curLOD_->mpGeometry_.Size()]);
@@ -173,7 +181,13 @@ void MeshLightmapUVGen::WriteLightmapUVCoords()
                 texCoordCount++;
         }
 
-        if (texCoordCount <= 1)
+        if (texCoordCount == 0)
+        {
+            // We don't have a valid UV set in UV0
+            mpGeo->elements_.Push(VertexElement(TYPE_VECTOR2, SEM_TEXCOORD, 0));
+            mpGeo->elements_.Push(VertexElement(TYPE_VECTOR2, SEM_TEXCOORD, 1));
+        }
+        else if (texCoordCount == 1)
         {
             bool added = false;
             for (unsigned j = 0; j < mpGeo->elements_.Size(); j++)
