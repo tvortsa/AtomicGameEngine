@@ -20,6 +20,7 @@ if (NOT IOS AND NOT ANDROID AND NOT EMSCRIPTEN)
     add_subdirectory(AtomicTool)
     add_subdirectory(Tools)
     add_subdirectory(AtomicNET)
+    add_subdirectory(AtomicGlow)
 endif()
 
 include(AtomicDocList)
