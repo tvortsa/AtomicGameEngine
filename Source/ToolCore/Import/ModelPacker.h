@@ -42,6 +42,12 @@ class MPLODLevel : public RefCounted
 
 public:
 
+    /// Get the total vertex and index counts of all LOD geometry
+    void GetTotalCounts(unsigned& totalVertices, unsigned& totalIndices) const;
+
+    /// Returns true if all LOD geometry contains element
+    bool HasElement(VertexElementType type, VertexElementSemantic semantic, unsigned char index = 0) const;
+
     Vector<SharedPtr<MPGeometry>> mpGeometry_;
 
     unsigned level_;

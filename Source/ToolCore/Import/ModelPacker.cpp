@@ -17,6 +17,42 @@ ModelPacker::~ModelPacker()
 
 }
 
+/// Get the total vertex and index counts of all LOD geometry
+void MPLODLevel::GetTotalCounts(unsigned& totalVertices, unsigned& totalIndices) const
+{
+    totalVertices = 0;
+    totalIndices = 0;
+
+    for (unsigned i = 0; i < mpGeometry_.Size(); i++)
+    {
+        MPGeometry* mpGeo = mpGeometry_[i];
+
+        totalVertices += mpGeo->vertices_.Size();
+        totalIndices += mpGeo->numIndices_;
+    }
+
+}
+
+/// Returns true if all LOD geometry contains element
+bool MPLODLevel::HasElement(VertexElementType type, VertexElementSemantic semantic, unsigned char index) const
+{
+    if (!mpGeometry_.Size())
+        return false;
+
+    for (unsigned i = 0; i < mpGeometry_.Size(); i++)
+    {
+        MPGeometry* mpGeo = mpGeometry_[i];
+
+        if (!VertexBuffer::HasElement(mpGeo->elements_, type, semantic, index))
+            return false;
+
+    }
+
+    return true;
+
+}
+
+
 bool ModelPacker::Pack()
 {
 
