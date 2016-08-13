@@ -27,7 +27,7 @@ class ModelAOBake : public Object
 
 private:
 
-    void TraceAORays(unsigned nsample, float multiply = 1.0f);
+    void TraceAORays(unsigned nsample, float aoDepth = 4.0f, float multiply = 1.0f);
 
     // generate current LOD AO map
     bool GenerateLODLevelAOMap(MPLODLevel* lodLevel);
@@ -46,7 +46,6 @@ private:
     {
         Vector3 position_;
         Vector3 normal_;
-        // -1, -1 == not used
         Vector2 pixelCoord_;
         Color color_;
     };

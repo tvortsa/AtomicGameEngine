@@ -42,6 +42,8 @@ public:
 
 private:
 
+    inline void EmitVertex(PODVector<MPVertex>& vertices, unsigned& index, const MPVertex& vertex);
+
     void WriteLightmapUVCoords();
 
     struct LMVertex

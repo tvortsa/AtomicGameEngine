@@ -28,9 +28,25 @@ MeshLightmapUVGen::~MeshLightmapUVGen()
 
 }
 
+inline void MeshLightmapUVGen::EmitVertex(PODVector<MPVertex>& vertices, unsigned& index, const MPVertex& vertex)
+{
+    index = 0;
+
+    for (unsigned i = 0; i < vertices.Size(); i++)
+    {
+        if (vertices[i] == vertex)
+        {
+            index = i;
+            return;
+        }
+    }
+
+    index = vertices.Size();
+    vertices.Push(vertex);
+}
+
 void MeshLightmapUVGen::WriteLightmapUVCoords()
 {
-
     String modelName = modelName_;
 
     if (!modelName.Length())
@@ -38,11 +54,14 @@ void MeshLightmapUVGen::WriteLightmapUVCoords()
 
     Thekla::atlas_write_debug_textures(tOutputMesh_, tInputMesh_, ToString("/Users/jenge/Desktop/%s_lmWorldSpaceTexture.png", modelName.CString()).CString() ,
                                                                   ToString("/Users/jenge/Desktop/%s_lmNormalTexture.png", modelName.CString()).CString() );
+    Vector<PODVector<MPVertex>> geoVerts;
+    Vector<PODVector<unsigned>> geoIndices;
 
-    SharedArrayPtr<unsigned> vertexCounts(new unsigned[curLOD_->mpGeometry_.Size()]);
-    SharedArrayPtr<unsigned> indexCounts(new unsigned[curLOD_->mpGeometry_.Size()]);
-    memset(&vertexCounts[0], 0, sizeof(unsigned) * curLOD_->mpGeometry_.Size());
-    memset(&indexCounts[0], 0, sizeof(unsigned) * curLOD_->mpGeometry_.Size());
+    geoVerts.Resize(curLOD_->mpGeometry_.Size());
+    geoIndices.Resize(curLOD_->mpGeometry_.Size());
+
+    float uscale = 1.f / tOutputMesh_->atlas_width;
+    float vscale = 1.f / tOutputMesh_->atlas_height;
 
     for (unsigned i = 0; i < tOutputMesh_->index_count/3; i++)
     {
@@ -66,107 +85,38 @@ void MeshLightmapUVGen::WriteLightmapUVCoords()
             assert(0);
         }
 
-        indexCounts[geometryIdx] += 3;
+        MPGeometry* mpGeo = curLOD_->mpGeometry_[geometryIdx];
 
-        if ((v0 + 1) >= vertexCounts[geometryIdx])
-            vertexCounts[geometryIdx] = v0 + 1;
-        if ((v1 + 1) >= vertexCounts[geometryIdx])
-            vertexCounts[geometryIdx] = v1 + 1;
-        if ((v2 + 1) >= vertexCounts[geometryIdx])
-            vertexCounts[geometryIdx] = v2 + 1;
+        PODVector<MPVertex>& verts = geoVerts[geometryIdx];
+        PODVector<unsigned>& indices = geoIndices[geometryIdx];
+
+        unsigned index;
+
+        MPVertex mpv = mpGeo->vertices_[lv0.originalVertex_];
+        mpv.uv1_ = Vector2(tv0.uv[0] * uscale,  tv0.uv[1] * vscale);
+        EmitVertex(verts, index, mpv);
+        indices.Push(index);
+
+        mpv = mpGeo->vertices_[lv1.originalVertex_];
+        mpv.uv1_ = Vector2(tv1.uv[0] * uscale,  tv1.uv[1] * vscale);
+        EmitVertex(verts, index, mpv);
+        indices.Push(index);
+
+        mpv = mpGeo->vertices_[lv2.originalVertex_];
+        mpv.uv1_ = Vector2(tv2.uv[0] * uscale,  tv2.uv[1] * vscale);
+        EmitVertex(verts, index, mpv);
+        indices.Push(index);
+
     }
-
-    float uscale = 1.f / tOutputMesh_->atlas_width;
-    float vscale = 1.f / tOutputMesh_->atlas_height;
 
     for (unsigned i = 0; i < curLOD_->mpGeometry_.Size(); i++)
     {
-        PODVector<MPVertex> nVertices;
-        nVertices.Resize(vertexCounts[i]);
-        SharedArrayPtr<unsigned> nIndices(new unsigned[indexCounts[i]]);
-
-        memset(&nVertices[0], 0, sizeof(MPVertex) * vertexCounts[i]);
-        memset(&nIndices[0], 0, sizeof(unsigned) * indexCounts[i]);
-
-        SharedArrayPtr<int> mappedVertices(new int[vertexCounts[i]]);
-        for (unsigned j = 0; j < vertexCounts[i]; j++)
-        {
-            mappedVertices[j] = -1;
-        }
-
-        unsigned curIndex = 0;
-        unsigned curVertex = 0;
-
         MPGeometry* mpGeo = curLOD_->mpGeometry_[i];
 
-        for (unsigned j = 0; j < tOutputMesh_->index_count/3; j++)
-        {
-            unsigned v0 = (unsigned) tOutputMesh_->index_array[j * 3];
-            unsigned v1 = (unsigned) tOutputMesh_->index_array[j * 3 + 1];
-            unsigned v2 = (unsigned) tOutputMesh_->index_array[j * 3 + 2];
-
-            Thekla::Atlas_Output_Vertex& tv0 = tOutputMesh_->vertex_array[v0];
-            Thekla::Atlas_Output_Vertex& tv1 = tOutputMesh_->vertex_array[v1];
-            Thekla::Atlas_Output_Vertex& tv2 = tOutputMesh_->vertex_array[v2];
-
-            LMVertex& lv0 = lmVertices_[tv0.xref];
-            LMVertex& lv1 = lmVertices_[tv1.xref];
-            LMVertex& lv2 = lmVertices_[tv2.xref];
-
-            unsigned geometryIdx = lv0.geometryIdx_;
-
-            if (geometryIdx != i)
-                continue;
-
-            // Map vertices
-
-            if (mappedVertices[v0] == -1)
-            {
-                // we haven't mapped this vertice
-                nVertices[curVertex] = mpGeo->vertices_[lv0.originalVertex_];
-                nVertices[curVertex].uv1_ = Vector2(tv0.uv[0] * uscale, tv0.uv[1] * vscale);
-                mappedVertices[v0] = curVertex;
-                v0 = curVertex++;
-            }
-            else
-            {
-                v0 = mappedVertices[v0];
-            }
-
-            if (mappedVertices[v1] == -1)
-            {
-                // we haven't mapped this vertice
-                nVertices[curVertex] = mpGeo->vertices_[lv1.originalVertex_];
-                nVertices[curVertex].uv1_ = Vector2(tv1.uv[0] * uscale,  tv1.uv[1] * vscale);
-                mappedVertices[v1] = curVertex;
-                v1 = curVertex++;
-            }
-            else
-            {
-                v1 = mappedVertices[v1];
-            }
-
-            if (mappedVertices[v2] == -1)
-            {
-                // we haven't mapped this vertice
-                nVertices[curVertex] = mpGeo->vertices_[lv2.originalVertex_];
-                nVertices[curVertex].uv1_ = Vector2(tv2.uv[0] * uscale, tv2.uv[1] * vscale);
-                mappedVertices[v2] = curVertex;
-                v2 = curVertex++;
-            }
-            else
-            {
-                v2 = mappedVertices[v2];
-            }
-
-            nIndices[curIndex++] = v0;
-            nIndices[curIndex++] = v1;
-            nIndices[curIndex++] = v2;
-
-        }
-
-        mpGeo->vertices_ = nVertices;
-        mpGeo->indices_ = nIndices;
+        mpGeo->vertices_ = geoVerts[i];
+        mpGeo->indices_ = new unsigned[geoIndices[i].Size()];
+        memcpy(&mpGeo->indices_[0], &geoIndices[i][0], sizeof(unsigned) * geoIndices[i].Size());
+        mpGeo->numIndices_ = geoIndices[i].Size();
 
         // Check whether we need to add UV1 semantic
 

@@ -415,6 +415,8 @@ bool ModelPacker::UnpackGeometry(MPLODLevel *level, Geometry* geometry)
 
     MPVertex* v = &mpGeo->vertices_[0];
 
+    v->Clear();
+
     for (unsigned i = 0; i < vertexCount; i++, v++)
     {
         float* fp = (float *) positionData;

@@ -113,7 +113,7 @@ unsigned ModelAOBake::GetImageSize(float pixelsPerUnit, bool powerOfTwo)
 }
 */
 
-void ModelAOBake::TraceAORays(unsigned nsamples, float multiply)
+void ModelAOBake::TraceAORays(unsigned nsamples, float aoDepth, float multiply)
 {
     // Intel says to do this, so we're doing it.
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
@@ -122,8 +122,7 @@ void ModelAOBake::TraceAORays(unsigned nsamples, float multiply)
     // Create the embree device and scene.
     RTCDevice device = rtcNewDevice(NULL);
     assert(device && "Unable to create embree device.");
-    RTCScene scene = rtcDeviceNewScene(device, RTC_SCENE_STATIC,
-        RTC_INTERSECT1);
+    RTCScene scene = rtcDeviceNewScene(device, RTC_SCENE_STATIC, RTC_INTERSECT1);
     assert(scene);
 
     // Create the embree mesh
@@ -162,76 +161,139 @@ void ModelAOBake::TraceAORays(unsigned nsamples, float multiply)
 
     double begintime = omp_get_wtime();
 
-    SharedArrayPtr<unsigned char> results ((unsigned char*) calloc(lightmap_->GetWidth() * lightmap_->GetHeight(), 1));
+    SharedArrayPtr<unsigned char> results(new unsigned char[lightmap_->GetWidth() * lightmap_->GetHeight()]);
+    memset(&results[0], 0, sizeof(unsigned char) * lightmap_->GetWidth() * lightmap_->GetHeight());
+
     const unsigned npixels = lightmap_->GetWidth() * lightmap_->GetHeight();
 
     const float E = 0.001f;
 
 #pragma omp parallel
-{
-    srand(omp_get_thread_num());
-    RTCRay ray;
-    ray.primID = RTC_INVALID_GEOMETRY_ID;
-    ray.instID = RTC_INVALID_GEOMETRY_ID;
-    ray.mask = 0xFFFFFFFF;
-    ray.time = 0.f;
+    {
+        srand(omp_get_thread_num());
+        RTCRay ray;
+        ray.primID = RTC_INVALID_GEOMETRY_ID;
+        ray.instID = RTC_INVALID_GEOMETRY_ID;
+        ray.mask = 0xFFFFFFFF;
+        ray.time = 0.f;
 
 #pragma omp for
 
-    for (unsigned i = 0; i < npixels; i++)
-    {
-        LMLexel& lexel = lmLexels_[i];
-
-        if (lexel.pixelCoord_.x_ < 0.0f)
-            continue;
-
-        ray.org[0] = lexel.position_.x_;
-        ray.org[1] = lexel.position_.y_;
-        ray.org[2] = lexel.position_.z_;
-
-        int nhits = 0;
-
-        // Shoot rays through the differential hemisphere.
-        for (unsigned nsamp = 0; nsamp < nsamples; nsamp++)
+        for (unsigned i = 0; i < npixels; i++)
         {
-            Vector3 rayDir;
-            GetRandomDirection(rayDir);
+            LMLexel& lexel = lmLexels_[i];
 
-            float dotp = lexel.normal_.x_ * rayDir.x_ +
-                lexel.normal_.y_ * rayDir.y_ +
-                lexel.normal_.z_ * rayDir.z_;
+            if (lexel.normal_ == Vector3::ZERO)
+                continue;
 
-            if (dotp < 0)
+            ray.org[0] = lexel.position_.x_;
+            ray.org[1] = lexel.position_.y_;
+            ray.org[2] = lexel.position_.z_;
+
+            int nhits = 0;
+
+            // Shoot rays through the differential hemisphere.
+            for (unsigned nsamp = 0; nsamp < nsamples; nsamp++)
             {
-                rayDir = -rayDir;
+                Vector3 rayDir;
+                GetRandomDirection(rayDir);
+
+                float dotp = lexel.normal_.x_ * rayDir.x_ +
+                        lexel.normal_.y_ * rayDir.y_ +
+                        lexel.normal_.z_ * rayDir.z_;
+
+                if (dotp < 0)
+                {
+                    rayDir = -rayDir;
+                }
+
+                ray.dir[0] = rayDir.x_;
+                ray.dir[1] = rayDir.y_;
+                ray.dir[2] = rayDir.z_;
+
+                ray.tnear = E;
+
+                float variance = 0.0f;//(aoDepth * (float) rand() / (float) RAND_MAX);
+
+                ray.tfar = aoDepth + variance;
+
+                ray.geomID = RTC_INVALID_GEOMETRY_ID;
+                rtcOccluded(scene, ray);
+
+                if (ray.geomID == 0)
+                {
+                    nhits++;
+                }
             }
 
-            ray.dir[0] = rayDir.x_;
-            ray.dir[1] = rayDir.y_;
-            ray.dir[2] = rayDir.z_;
-
-            ray.tnear = E;
-            ray.tfar = FLT_MAX;
-            ray.geomID = RTC_INVALID_GEOMETRY_ID;
-            rtcOccluded(scene, ray);
-
-            if (ray.geomID == 0)
-            {
-                nhits++;
-            }
+            float ao = multiply * (1.0f - (float) nhits / nsamples);
+            float result = Min<float>(1.0f, ao);
+            lexel.color_ = Color(result, result, result);
         }
-
-        float ao = multiply * (1.0f - (float) nhits / nsamples);
-        float result = Min<float>(1.0f, ao);
-        lexel.color_ = Color(result, result, result);
     }
-}
 
 
     // Free all embree data.
     rtcDeleteGeometry(scene, gid);
     rtcDeleteScene(scene);
     rtcDeleteDevice(device);
+
+    // Dilate the image by 2 pixels to allow bilinear texturing near seams.
+    // Note that this still allows seams when mipmapping, unless mipmap levels
+    // are generated very carefully.
+    for (int step = 0; step < 2; step++)
+    {
+        SharedArrayPtr<Color> tmp(new Color[lightmap_->GetWidth() * lightmap_->GetHeight()]);
+        memset (&tmp[0], 0, lightmap_->GetWidth() * lightmap_->GetHeight() * sizeof(Color));
+
+        for (int y = 0; y < lightmap_->GetHeight() ; y++)
+        {
+            for (int x = 0; x < lightmap_->GetWidth(); x++)
+            {
+                int center = x + y * lightmap_->GetWidth();
+
+                const LMLexel& lexel = lmLexels_[center];
+                const Vector3& norm = lexel.normal_;
+
+                tmp[center] = lexel.color_;
+
+                if (norm.x_ == 0 && norm.y_ == 0 && norm.z_ == 0 && lexel.color_ == Color::BLACK)
+                {
+                    for (int k = 0; k < 9; k++)
+                    {
+                        int i = (k / 3) - 1, j = (k % 3) - 1;
+
+                        if (i == 0 && j == 0)
+                        {
+                            continue;
+                        }
+
+                        i += x;
+                        j += y;
+
+                        if (i < 0 || j < 0 || i >= lightmap_->GetWidth() || j >=  lightmap_->GetHeight() )
+                        {
+                            continue;
+                        }
+
+                        const LMLexel& lexel2 = lmLexels_[i + j * lightmap_->GetWidth()];
+
+                        if (lexel2.color_ != Color::BLACK)
+                        {
+                            tmp[center] = lexel2.color_;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        for (unsigned i = 0; i < lmLexels_.Size(); i++)
+        {
+            lmLexels_[i].color_ = tmp[i];
+        }
+
+    }
 
 }
 
@@ -246,6 +308,7 @@ bool ModelAOBake::GenerateLODLevelAOMap(MPLODLevel *lodLevel)
     }
 
     // LOD must have LM coords
+
     if (!curLOD_->HasElement(TYPE_VECTOR2, SEM_TEXCOORD, 1))
     {
         curLOD_ = 0;
@@ -304,8 +367,8 @@ bool ModelAOBake::GenerateLODLevelAOMap(MPLODLevel *lodLevel)
     lightmap_ = new Image(context_);
 
     unsigned w, h;
-    w = 512;
-    h = 512;
+    w = 1024;
+    h = 1024;
 
     lightmap_->SetSize(w, h, 2, 3);
 
@@ -317,6 +380,8 @@ bool ModelAOBake::GenerateLODLevelAOMap(MPLODLevel *lodLevel)
         lexel.color_ = Color::BLACK;
         lexel.pixelCoord_.x_ = -1;
         lexel.pixelCoord_.y_ = -1;
+        lexel.normal_ = Vector3(0, 0, 0);
+        lexel.position_ = Vector3(0, 0, 0);
     }
 
     // for all triangles
@@ -362,6 +427,9 @@ bool ModelAOBake::GenerateLODLevelAOMap(MPLODLevel *lodLevel)
 
             for (int x = minX; x <= maxX; x++)
             {
+                LMLexel& lexel = lmLexels_[y * lightmap_->GetWidth() + x];
+                lexel.pixelCoord_ = Vector2(x, y);
+
                 texCoord.x_ = (((float)x) + 0.5f) / (float)lightmap_->GetWidth();
 
                 GetBarycentricCoordinates(t0, t1, t2, texCoord, barycentricCoords);
@@ -370,6 +438,7 @@ bool ModelAOBake::GenerateLODLevelAOMap(MPLODLevel *lodLevel)
                     continue;
 
                 pos = barycentricCoords.x_ * p0 + barycentricCoords.y_ * p1 + barycentricCoords.z_ * p2;
+
                 normal = barycentricCoords.x_ * n0 + barycentricCoords.y_ * n1 + barycentricCoords.z_ * n2;
 
                 if (!normal.Length())
@@ -377,32 +446,23 @@ bool ModelAOBake::GenerateLODLevelAOMap(MPLODLevel *lodLevel)
 
                 normal.Normalize();
 
-                LMLexel& lexel = lmLexels_[y * lightmap_->GetWidth() + x];
-
-                lexel.pixelCoord_ = Vector2(x, y);
                 lexel.position_ = pos;
                 lexel.normal_ = normal;
-                // lightmap_->SetPixelInt(x, y, 0, 0xFFFFFFFF);
             }
         }
-
     }
 
     // Raytrace
 
-    TraceAORays(128);
+    TraceAORays(128, 0.5f);
 
     for (unsigned i = 0; i < lmLexels_.Size(); i++)
     {
         const LMLexel& lexel = lmLexels_[i];
-
-        if (lexel.pixelCoord_.x_ < 0.0f)
-            continue;
-
         lightmap_->SetPixelInt(lexel.pixelCoord_.x_, lexel.pixelCoord_.y_, 0, lexel.color_.ToUInt());
     }
 
-    lightmap_->SavePNG("/Users/jenge/Desktop/lightmap.png");
+    lightmap_->SavePNG("/Users/jenge/Dev/atomic/AtomicExamples/GlowTest/Resources/Textures/lightmap.png");
 
 
     // GetImageSize(32, false);

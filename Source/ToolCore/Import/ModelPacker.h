@@ -20,6 +20,27 @@ struct MPVertex
     unsigned color_;
     Vector2 uv0_;
     Vector2 uv1_;
+
+    void Clear()
+    {
+        position_ =  Vector3::ZERO;
+        normal_ = Vector3::ZERO;
+        tangent_ = Vector4::ZERO;
+        uv0_ = Vector2::ZERO;
+        uv1_ = Vector2::ZERO;
+        color_ = 0;
+    }
+
+    bool operator==(const MPVertex& rhs)
+    {
+        return ( position_ == rhs.position_ &&
+                 normal_ == rhs.normal_ &&
+                 tangent_ == rhs.tangent_ &&
+                 color_ == rhs.color_ &&
+                 uv0_ == rhs.uv0_ &&
+                 uv1_ == rhs.uv1_ );
+
+    }
 };
 
 class MPGeometry : public RefCounted
