@@ -2,6 +2,7 @@
 #pragma once
 
 #include <ToolCore/Import/ModelPacker.h>
+#include "Raster.h"
 
 using namespace Atomic;
 using namespace ToolCore;
@@ -31,6 +32,18 @@ private:
 
     // generate current LOD AO map
     bool GenerateLODLevelAOMap(MPLODLevel* lodLevel);
+
+    struct ShaderData
+    {
+        ModelAOBake* bake_;
+        Vector3 triPositions_[3];
+        Vector3 triNormals_[3];
+        Vector3 faceNormal_;
+    };
+
+    static bool FillLexelsCallback(void* param, int x, int y, const Vector3& barycentric,const Vector3& dx, const Vector3& dy, float coverage);
+
+    bool GenerateLexels();
 
     //unsigned GetImageSize(float pixelsPerUnit, bool powerOfTwo);
 

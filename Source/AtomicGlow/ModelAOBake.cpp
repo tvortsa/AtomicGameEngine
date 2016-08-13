@@ -297,6 +297,28 @@ void ModelAOBake::TraceAORays(unsigned nsamples, float aoDepth, float multiply)
 
 }
 
+bool ModelAOBake::GenerateLexels()
+{
+
+    return true;
+}
+
+bool ModelAOBake::FillLexelsCallback(void* param, int x, int y, const Vector3& barycentric,const Vector3& dx, const Vector3& dy, float coverage)
+{
+    ShaderData* shaderData = (ShaderData*) param;
+    ModelAOBake* bake = shaderData->bake_;
+
+    LMLexel& lexel = bake->lmLexels_[ y * bake->lightmap_->GetWidth() + x];
+
+    lexel.position_ = shaderData->triPositions_[0] * barycentric.x_ +
+            shaderData->triPositions_[1] *  barycentric.y_ +
+            shaderData->triPositions_[2] * barycentric.z_;
+
+    lexel.normal_ = shaderData->faceNormal_;
+
+    return true;
+}
+
 bool ModelAOBake::GenerateLODLevelAOMap(MPLODLevel *lodLevel)
 {
     curLOD_ = lodLevel;
@@ -367,90 +389,66 @@ bool ModelAOBake::GenerateLODLevelAOMap(MPLODLevel *lodLevel)
     lightmap_ = new Image(context_);
 
     unsigned w, h;
-    w = 1024;
-    h = 1024;
+    w = 4096;
+    h = 4096;
 
     lightmap_->SetSize(w, h, 2, 3);
 
     lmLexels_.Resize(w * h);
 
-    for (unsigned i = 0; i < w * h; i++)
+    for (unsigned y = 0; y < h; y++)
     {
-        LMLexel& lexel = lmLexels_[i];
-        lexel.color_ = Color::BLACK;
-        lexel.pixelCoord_.x_ = -1;
-        lexel.pixelCoord_.y_ = -1;
-        lexel.normal_ = Vector3(0, 0, 0);
-        lexel.position_ = Vector3(0, 0, 0);
+        for (unsigned x = 0; x < w ; x++)
+        {
+            LMLexel& lexel = lmLexels_[y * w + x];
+            lexel.color_ = Color::BLACK;
+            lexel.pixelCoord_.x_ = x;
+            lexel.pixelCoord_.y_ = y;
+            lexel.normal_ = Vector3(0, 0, 0);
+            lexel.position_ = Vector3(0, 0, 0);
+        }
     }
 
     // for all triangles
 
+    Vector2 extents(lightmap_->GetWidth(), lightmap_->GetHeight());
+    Vector2 triUV[3];
+
+    ShaderData shaderData;
+
+    shaderData.bake_ = this;
+
     for (unsigned i = 0; i < numIndices_; i += 3)
     {
-        Vector3 p0, p1, p2;
-        Vector3 n0, n1, n2;
-        Vector2 t0, t1, t2;
+        shaderData.triPositions_[0] = lmVertices_[indices_[i]].position_;
+        shaderData.triPositions_[1] = lmVertices_[indices_[i + 1]].position_;
+        shaderData.triPositions_[2] = lmVertices_[indices_[i + 2]].position_;
 
-        p0 = lmVertices_[indices_[i]].position_;
-        p1 = lmVertices_[indices_[i + 1]].position_;
-        p2 = lmVertices_[indices_[i + 2]].position_;
+        shaderData.triNormals_[0] = lmVertices_[indices_[i]].normal_;
+        shaderData.triNormals_[1] = lmVertices_[indices_[i + 1]].normal_;
+        shaderData.triNormals_[2] = lmVertices_[indices_[i + 2]].normal_;
 
-        n0 = lmVertices_[indices_[i]].normal_;
-        n1 = lmVertices_[indices_[i + 1]].normal_;
-        n2 = lmVertices_[indices_[i + 2]].normal_;
+        triUV[0] = lmVertices_[indices_[i]].uv1_;
+        triUV[1] = lmVertices_[indices_[i + 1]].uv1_;
+        triUV[2] = lmVertices_[indices_[i + 2]].uv1_;
 
-        t0 = lmVertices_[indices_[i]].uv1_;
-        t1 = lmVertices_[indices_[i + 1]].uv1_;
-        t2 = lmVertices_[indices_[i + 2]].uv1_;
+        triUV[0].x_ *= w;
+        triUV[1].x_ *= w;
+        triUV[2].x_ *= w;
 
-        Vector2 tMin = t0;
-        tMin.ComponentwiseMin(t1);
-        tMin.ComponentwiseMin(t2);
-        Vector2 tMax = t0;
-        tMax.ComponentwiseMax(t1);
-        tMax.ComponentwiseMax(t2);
+        triUV[0].y_ *= h;
+        triUV[1].y_ *= h;
+        triUV[2].y_ *= h;
 
-        int minX = GetPixelCoordinate(tMin.x_, lightmap_->GetWidth());
-        int maxX = GetPixelCoordinate(tMax.x_, lightmap_->GetWidth());
-        int minY = GetPixelCoordinate(tMin.y_, lightmap_->GetHeight());
-        int maxY = GetPixelCoordinate(tMax.y_, lightmap_->GetHeight());
+        Vector3 A = shaderData.triPositions_[1] - shaderData.triPositions_[0];
+        Vector3 B = shaderData.triPositions_[2] - shaderData.triPositions_[0];
+        shaderData.faceNormal_ = A.CrossProduct(B);
+        shaderData.faceNormal_.Normalize();
 
-        Vector3 pos;
-        Vector3 normal;
-        Vector2 texCoord;
-        Vector3 barycentricCoords;
+        Raster::DrawTriangle(true, extents, true, triUV, FillLexelsCallback, &shaderData );
 
-        for (int y = minY; y <= maxY; y++)
-        {
-            texCoord.y_ = (((float)y) + 0.5f) / (float)lightmap_->GetHeight();
-
-            for (int x = minX; x <= maxX; x++)
-            {
-                LMLexel& lexel = lmLexels_[y * lightmap_->GetWidth() + x];
-                lexel.pixelCoord_ = Vector2(x, y);
-
-                texCoord.x_ = (((float)x) + 0.5f) / (float)lightmap_->GetWidth();
-
-                GetBarycentricCoordinates(t0, t1, t2, texCoord, barycentricCoords);
-
-                if (barycentricCoords.x_ < 0 || barycentricCoords.y_ < 0 || barycentricCoords.z_ < 0)
-                    continue;
-
-                pos = barycentricCoords.x_ * p0 + barycentricCoords.y_ * p1 + barycentricCoords.z_ * p2;
-
-                normal = barycentricCoords.x_ * n0 + barycentricCoords.y_ * n1 + barycentricCoords.z_ * n2;
-
-                if (!normal.Length())
-                    continue;
-
-                normal.Normalize();
-
-                lexel.position_ = pos;
-                lexel.normal_ = normal;
-            }
-        }
     }
+
 
     // Raytrace
 
