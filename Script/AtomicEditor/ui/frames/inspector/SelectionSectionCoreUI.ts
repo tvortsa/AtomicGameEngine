@@ -132,5 +132,42 @@ class CubemapGeneratorSectionUI extends SelectionSectionUI {
 
 }
 
+class DynamicNavigationMeshSectionUI extends SelectionSectionUI {
+
+    createUI(editType: SerializableEditType) {
+
+        this.editType = editType;
+
+        var button = new Atomic.UIButton();
+        button.fontDescription = InspectorUtils.attrFontDesc;
+        button.gravity = Atomic.UI_GRAVITY_RIGHT;
+        button.text = "Build Navigation";
+
+        button.onClick = () => {
+
+            var progressModal = new ProgressModal("Navigation Mesh", "Calculating, please wait...");
+
+            var navmesh = <Atomic.DynamicNavigationMesh>this.editType.objects[0];
+
+            this.subscribeToEvent("NavigationMeshRebuilt", () => {
+
+                progressModal.hide();
+
+            });
+
+            progressModal.show();
+
+            navmesh.build();
+
+        };
+
+        this.addChild(button);
+
+    }
+
+}
+
+
 SelectionSection.registerCustomSectionUI("CollisionShape", CollisionShapeSectionUI);
 SelectionSection.registerCustomSectionUI("CubemapGenerator", CubemapGeneratorSectionUI);
+SelectionSection.registerCustomSectionUI("DynamicNavigationMesh", DynamicNavigationMeshSectionUI);
