@@ -1,6 +1,10 @@
 //
 // Copyright (c) 2014-2016 THUNDERBEAST GAMES LLC
 //
+// Includes work from MIT licensed Urho3d terrain editor by JTippetts
+// https://github.com/JTippetts/U3DTerrainEditor
+// Copyright (c) 2015 JTippetts
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
