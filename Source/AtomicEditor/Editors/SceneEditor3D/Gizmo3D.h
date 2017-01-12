@@ -106,7 +106,8 @@ enum EditMode
     EDIT_SELECT,
     EDIT_MOVE,
     EDIT_ROTATE,
-    EDIT_SCALE
+    EDIT_SCALE,
+	TERRAIN
 };
 
 enum AxisMode
@@ -130,6 +131,7 @@ public:
     AxisMode GetAxisMode() const { return axisMode_; }
 
     void SetEditMode(EditMode mode);
+	EditMode GetEditMode();
 
     bool Selected()
     {

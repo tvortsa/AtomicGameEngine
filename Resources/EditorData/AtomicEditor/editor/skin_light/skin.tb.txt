@@ -191,7 +191,9 @@ elements
 		bitmap 3d_translate.png
 	3DRotateBitmap
 		bitmap 3d_rotate.png
-
+	HeightEdit
+		bitmap terrain_height.png
+		
 	DarkGrayText
 		text-color #212121
 

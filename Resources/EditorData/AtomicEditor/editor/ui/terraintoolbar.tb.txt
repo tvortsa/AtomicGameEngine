@@ -1,0 +1,37 @@
+TBLayout: axis: y, distribution: gravity, spacing: 10
+	lb: min_width: 750
+	TBLayout: axis: x
+		TBButton: toggle-mode: 1
+			@include definitions>menubutton
+			text RAISE
+			font: size:10
+			id raisebutton
+			tooltip Raise
+			lp: width: 70, height: 30
+		TBButton: toggle-mode: 1
+			@include definitions>menubutton
+			text LOWER
+			font: size:10
+			id lowerbutton
+			tooltip Lower
+			lp: width: 70, height: 30
+		TBButton: toggle-mode: 1
+			@include definitions>menubutton
+			text SMOOTH
+			font: size:10
+			id smoothbutton
+			tooltip Smooth
+			lp: width: 70, height: 30
+	
+		TBLayout: axis: x
+			TBTextField: text: "Size:"
+			TBInlineSelect: id: brushsize, min: 1, max: 20, value: 5	
+				lp: width: 80, height: 30			
+		TBLayout: axis: x
+			TBTextField: text: "Power:"
+			TBInlineSelect: id: brushpower, min: 1, max: 10, value: 5	
+				lp: width: 80, height: 30		
+		TBLayout: axis: x
+			TBTextField: text: "Hardness:"
+			TBInlineSelect: id: brushhardness, min: 1, max: 10, value: 5	
+				lp: width: 80, height: 30

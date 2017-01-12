@@ -27,6 +27,7 @@
 #include <Atomic/Core/Object.h>
 
 #include <Atomic/UI/UISceneView.h>
+#include <Atomic/Graphics/Octree.h>
 
 using namespace Atomic;
 
@@ -68,10 +69,12 @@ public:
 
     DebugRenderer* GetDebugRenderer() { return debugRenderer_; }
     SceneEditor3D* GetSceneEditor3D() { return sceneEditor_; }
+	Camera* GetCamera() { return camera_; }
+	Octree* GetOctree() { return octree_; }
+	bool MouseInView();
 
 private:
 
-    bool MouseInView();
     bool GetOrbitting();
     bool GetZooming();
 

@@ -173,13 +173,13 @@ bool SceneView3D::GetOrbitting()
 bool SceneView3D::GetZooming()
 {
     Input* input = GetSubsystem<Input>();
-    return MouseInView() && input->GetMouseMoveWheel() && !input->GetMouseButtonDown(MOUSEB_RIGHT);
+    return MouseInView() && input->GetMouseMoveWheel() && !input->GetMouseButtonDown(MOUSEB_RIGHT) && !input->GetKeyDown(KEY_LCTRL);
 }
 
 bool SceneView3D::GetChangingCameraSpeed()
 {
     Input* input = GetSubsystem<Input>();
-    return MouseInView() && input->GetMouseMoveWheel() && input->GetMouseButtonDown(MOUSEB_RIGHT);
+    return MouseInView() && input->GetMouseMoveWheel() && input->GetMouseButtonDown(MOUSEB_RIGHT) && !input->GetKeyDown(KEY_LCTRL);
 }
 
 void SceneView3D::CheckCameraSpeedBounds()
@@ -534,7 +534,10 @@ void SceneView3D::HandleUIWidgetFocusEscaped(StringHash eventType, VariantMap& e
 void SceneView3D::HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData)
 {
 
-    if (!MouseInView() || GetOrbitting())
+	ATOMIC_LOGDEBUG("Updating sceneview");
+	int mode = sceneEditor_->GetGizmo()->GetEditMode();
+
+    if (!MouseInView() || GetOrbitting() || mode == TERRAIN)
         return;
 
     Input* input = GetSubsystem<Input>();

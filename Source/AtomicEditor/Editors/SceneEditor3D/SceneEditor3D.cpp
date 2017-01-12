@@ -53,6 +53,7 @@
 #include "SceneSelection.h"
 #include "SceneEditHistory.h"
 #include "SceneEditor3DEvents.h"
+#include "../TerrainEditor/TerrainEditor.h"
 
 using namespace ToolCore;
 
@@ -86,6 +87,7 @@ SceneEditor3D::SceneEditor3D(Context* context, const String &fullpath, UITabCont
     selection_ = new SceneSelection(context, this);
     sceneView_ = new SceneView3D(context_, this);
     editHistory_ = new SceneEditHistory(context, this);
+	terrainEditor_ = new TerrainEditor(context, this);
 
     AssetDatabase* assetDB = GetSubsystem<AssetDatabase>();
     Asset* sceneAsset = assetDB->GetAssetByPath(fullpath);

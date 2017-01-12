@@ -34,6 +34,11 @@ TBLayout: distribution: gravity, spacing: 4
 		id 3d_scale
 		tooltip Scale
 	TBButton: toggle-mode: 1
+		@include definitions>menubutton
+		TBSkinImage: skin: HeightEdit
+		id terrain_height
+		tooltip Edit Terrain
+	TBButton: toggle-mode: 1
 		lp: width: 64
 		text: "Local"
 		id 3d_axismode

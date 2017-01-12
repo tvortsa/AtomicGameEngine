@@ -27,6 +27,7 @@ import InspectorFrame = require("./inspector/InspectorFrame");
 import HierarchyFrame = require("./HierarchyFrame");
 import MainToolbar = require("ui//MainToolbar");
 import AnimationToolbar = require("ui//AnimationToolbar");
+import TerrainToolbar = require("ui//TerrainToolbar");
 
 import UIEvents = require("ui/UIEvents");
 
@@ -58,7 +59,10 @@ class MainFrame extends ScriptWidget {
         this.resourceframe = new ResourceFrame(this);
 
         this.mainToolbar = new MainToolbar(this.getWidget("maintoolbarcontainer"));
+        this.terrainToolbar = new TerrainToolbar(this.getWidget("modaltoolbarcontainer"), this.getWidget("modalpropertiescontainer"));
 
+        this.terrainToolbar.disable();
+        this.terrainToolbar.setVisibility(Atomic.UI_WIDGET_VISIBILITY_GONE);
         this.menu = new MainFrameMenu();
 
         this.disableProjectMenus();
@@ -178,11 +182,21 @@ class MainFrame extends ScriptWidget {
     showAnimationToolbar(asset: ToolCore.Asset) {
         if (this.animationToolbar != null) {
             this.animationToolbar.closeViewer();
-            this.animationToolbar = new AnimationToolbar(this.getWidget("animationtoolbarcontainer"), this.getWidget("animationpropertiescontainer"), asset);
+            this.animationToolbar = new AnimationToolbar(this.getWidget("modaltoolbarcontainer"), this.getWidget("modalpropertiescontainer"), asset);
         }
         else {
-            this.animationToolbar = new AnimationToolbar(this.getWidget("animationtoolbarcontainer"), this.getWidget("animationpropertiescontainer"), asset);
+            this.animationToolbar = new AnimationToolbar(this.getWidget("modaltoolbarcontainer"), this.getWidget("modalpropertiescontainer"), asset)
         }
+    }
+
+    showTerrainToolbar() {
+        this.terrainToolbar.enable();
+        this.terrainToolbar.setVisibility(Atomic.UI_WIDGET_VISIBILITY_VISIBLE);
+    }
+
+    hideTerrainToolbar() {
+        this.terrainToolbar.disable();
+        this.terrainToolbar.setVisibility(Atomic.UI_WIDGET_VISIBILITY_GONE);
     }
 
     projectframe: ProjectFrame;
@@ -193,6 +207,7 @@ class MainFrame extends ScriptWidget {
     inspectorlayout: Atomic.UILayout;
     mainToolbar: MainToolbar;
     animationToolbar: AnimationToolbar;
+    terrainToolbar: TerrainToolbar;
     menu: MainFrameMenu;
 
 }

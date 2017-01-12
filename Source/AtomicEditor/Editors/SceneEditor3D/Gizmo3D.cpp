@@ -130,7 +130,9 @@ void Gizmo3D::Position()
         case EDIT_SCALE:
             gizmo_->SetModel(cache->GetResource<Model>("AtomicEditor/Models/ScaleAxes.mdl"));
             break;
-
+        case TERRAIN:
+            Hide();
+            break;
         default:
             break;
         }
@@ -139,10 +141,10 @@ void Gizmo3D::Position()
     }
 
     bool orbiting = false;
-    if ((editMode_ != EDIT_SELECT && !orbiting) && !gizmo_->IsEnabled())
-        Show();
-    else if ((editMode_ == EDIT_SELECT || orbiting) && gizmo_->IsEnabled())
+    if ((editMode_ == EDIT_SELECT || orbiting) && gizmo_->IsEnabled())
         Hide();
+    else if (((editMode_ == EDIT_MOVE || editMode_ == EDIT_ROTATE || editMode_ == EDIT_SCALE) && !orbiting) && !gizmo_->IsEnabled())
+        Show();
 
     if (gizmo_->IsEnabled())
     {
@@ -160,6 +162,11 @@ void Gizmo3D::Position()
 
 void Gizmo3D::Update()
 {
+    if ((gizmo_.Null() || !gizmo_->IsEnabled()) && editMode_ != EDIT_MOVE && editMode_ != EDIT_SCALE && editMode_ != EDIT_ROTATE)
+    {
+        return;
+    }
+
     Use();
     Position();
 }
@@ -173,10 +180,6 @@ void Gizmo3D::CalculateGizmoAxes()
 
 void Gizmo3D::Use()
 {
-    if (gizmo_.Null() || !gizmo_->IsEnabled() || editMode_ == EDIT_SELECT)
-    {
-        return;
-    }
 
     ResourceCache* cache = GetSubsystem<ResourceCache>();
     Input* input = GetSubsystem<Input>();
@@ -224,8 +227,8 @@ void Gizmo3D::Use()
     if (gizmoAxisX_.selected_ != gizmoAxisX_.lastSelected_)
     {
         gizmo_->SetMaterial(0, cache->GetResource<Material>(
-                                gizmoAxisX_.selected_ ?
-                                    "AtomicEditor/Materials/BrightRedUnlit.xml" : "AtomicEditor/Materials/RedUnlit.xml"));
+            gizmoAxisX_.selected_ ?
+            "AtomicEditor/Materials/BrightRedUnlit.xml" : "AtomicEditor/Materials/RedUnlit.xml"));
 
         gizmoAxisX_.lastSelected_ = gizmoAxisX_.selected_;
     }
@@ -233,16 +236,16 @@ void Gizmo3D::Use()
     if (gizmoAxisY_.selected_ != gizmoAxisY_.lastSelected_)
     {
         gizmo_->SetMaterial(1, cache->GetResource<Material>(
-                                gizmoAxisY_.selected_ ?
-                                    "AtomicEditor/Materials/BrightGreenUnlit.xml" : "AtomicEditor/Materials/GreenUnlit.xml"));
+            gizmoAxisY_.selected_ ?
+            "AtomicEditor/Materials/BrightGreenUnlit.xml" : "AtomicEditor/Materials/GreenUnlit.xml"));
 
         gizmoAxisY_.lastSelected_ = gizmoAxisY_.selected_;
     }
     if (gizmoAxisZ_.selected_ != gizmoAxisZ_.lastSelected_)
     {
         gizmo_->SetMaterial(2, cache->GetResource<Material>(
-                                gizmoAxisZ_.selected_ ?
-                                    "AtomicEditor/Materials/BrightBlueUnlit.xml" : "AtomicEditor/Materials/BlueUnlit.xml"));
+            gizmoAxisZ_.selected_ ?
+            "AtomicEditor/Materials/BrightBlueUnlit.xml" : "AtomicEditor/Materials/BlueUnlit.xml"));
 
         gizmoAxisZ_.lastSelected_ = gizmoAxisZ_.selected_;
     }
@@ -502,6 +505,7 @@ void Gizmo3D::SetEditMode(EditMode mode)
 {
     editMode_ = mode;
 }
+EditMode Gizmo3D::GetEditMode() { return editMode_; };
 
 void Gizmo3D::Hide()
 {

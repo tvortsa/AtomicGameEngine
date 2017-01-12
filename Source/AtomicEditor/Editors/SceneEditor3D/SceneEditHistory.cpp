@@ -164,6 +164,12 @@ void SceneEditHistory::EndSelectionEdit(bool begin)
 
 void SceneEditHistory::Undo()
 {
+	//If we are in terrain edit mode, revert the terrain to its heightmap image and return
+	if (sceneEditor_->GetGizmo()->GetEditMode() == TERRAIN){
+		sceneEditor_->GetTerrainEditor()->Revert();
+		return;
+	}
+
     if (!undoHistory_.Size())
         return;
 

@@ -198,6 +198,8 @@ elements
 	DarkGrayText
 		text-color #aaaaaa
 
+	HeightEdit
+		bitmap terrain_height.png
 
 	InspectorTopLayout
 		background-color #333333

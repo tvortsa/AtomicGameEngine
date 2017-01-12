@@ -32,6 +32,7 @@ class MainToolbar extends Atomic.UIWidget {
     playButton: Atomic.UIButton;
     pauseButton: Atomic.UIButton;
     stepButton: Atomic.UIButton;
+    heightmapButton: Atomic.UIButton;
 
     constructor(parent: Atomic.UIWidget) {
 
@@ -42,6 +43,7 @@ class MainToolbar extends Atomic.UIWidget {
         this.translateButton = <Atomic.UIButton>this.getWidget("3d_translate");
         this.rotateButton = <Atomic.UIButton>this.getWidget("3d_rotate");
         this.scaleButton = <Atomic.UIButton>this.getWidget("3d_scale");
+        this.heightmapButton = <Atomic.UIButton>this.getWidget("terrain_height");
 
         this.axisButton = <Atomic.UIButton>this.getWidget("3d_axismode");
 
@@ -108,6 +110,7 @@ class MainToolbar extends Atomic.UIWidget {
         this.translateButton.value = 0;
         this.rotateButton.value = 0;
         this.scaleButton.value = 0;
+        this.heightmapButton.value = 0;
 
         switch (ev.mode) {
             case 1:
@@ -119,6 +122,9 @@ class MainToolbar extends Atomic.UIWidget {
             case 3:
                 this.scaleButton.value = 1;
                 break;
+            case 4:
+                this.heightmapButton.value = 1;
+                break;
         }
 
     }
@@ -127,13 +133,21 @@ class MainToolbar extends Atomic.UIWidget {
 
         if (ev.type == Atomic.UI_EVENT_TYPE.UI_EVENT_TYPE_CLICK && ev.target) {
 
-            if (ev.target.id == "3d_translate" || ev.target.id == "3d_rotate" || ev.target.id == "3d_scale") {
-
+            if (ev.target.id == "3d_translate" || ev.target.id == "3d_rotate"
+                 || ev.target.id == "3d_scale" || ev.target.id == "terrain_height") {
                 var mode = 1;
                 if (ev.target.id == "3d_rotate")
                     mode = 2;
                 else if (ev.target.id == "3d_scale")
                     mode = 3;
+                else if (ev.target.id == "terrain_height"){
+                    mode = 4;
+                }
+
+                if(mode == 4)
+                  EditorUI.getMainFrame().showTerrainToolbar();
+                else
+                  EditorUI.getMainFrame().hideTerrainToolbar();
 
                 this.sendEvent("GizmoEditModeChanged", { mode: mode });
 

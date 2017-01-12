@@ -25,6 +25,7 @@
 #include <TurboBadger/tb_widgets_common.h>
 
 #include "../ResourceEditor.h"
+#include "../TerrainEditor/TerrainEditor.h"
 #include "SceneView3D.h"
 #include "Gizmo3D.h"
 
@@ -71,6 +72,7 @@ public:
     SceneSelection* GetSelection() { return selection_; }
     SceneEditHistory* GetEditHistory() { return editHistory_; }
     SceneView3D* GetSceneView3D() { return sceneView_; }
+	TerrainEditor* GetTerrainEditor() { return terrainEditor_; }
 
     void RegisterNode(Node* node);
     void RegisterNodes(const PODVector<Node*>& nodes);
@@ -127,6 +129,7 @@ private:
     SharedPtr<SceneSelection> selection_;
     SharedPtr<SceneEditHistory> editHistory_;
     SharedPtr<SceneImporter> sceneImporter_;
+	SharedPtr<TerrainEditor> terrainEditor_;
 
     SharedPtr<Node> clipboardNode_;
 
@@ -137,6 +140,8 @@ private:
     static Vector<WeakPtr<SceneEditor3D>> sceneEditors_;
 
     int cubemapRenderCount_;
+
+	//EditMode editMode_;
 
 };
 
