@@ -534,7 +534,7 @@ void SceneView3D::HandleUIWidgetFocusEscaped(StringHash eventType, VariantMap& e
 void SceneView3D::HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData)
 {
 
-	ATOMIC_LOGDEBUG("Updating sceneview");
+	//ATOMIC_LOGDEBUG("Updating sceneview");
 	int mode = sceneEditor_->GetGizmo()->GetEditMode();
 
     if (!MouseInView() || GetOrbitting() || mode == TERRAIN)
