@@ -93,12 +93,6 @@ class TerrainToolbar extends Atomic.UIWidget {
         return false;
     }
 
-    handleSceneClosed(ev: EditorEvents.SceneClosedEvent) {
-        if (ev.scene == this.scene) {
-            this.remove();
-        }
-    }
-
     handleTerrainEditModeChanged(ev: TerrainEditModeChangedEvent) {
 
         this.raiseButton.value = 0;
