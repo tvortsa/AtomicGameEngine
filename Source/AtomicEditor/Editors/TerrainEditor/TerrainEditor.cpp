@@ -327,8 +327,6 @@ namespace AtomicEditor
         if (!terrain || !height) return;
 
         Vector3 world = Vector3(x, 0, z);
-		Vector3 pos = terrain->GetNode()->GetPosition();
-		world += pos;
         IntVector2 ht = terrain->WorldToHeightMap(world);
 
         int sz = radius + 1;
