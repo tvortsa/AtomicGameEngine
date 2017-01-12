@@ -139,7 +139,7 @@ namespace AtomicEditor
 				}
 
 				cursorPosition_ = hitpos_;
-				ATOMIC_LOGDEBUG(cursorPosition_.ToString());
+				//ATOMIC_LOGDEBUG(cursorPosition_.ToString());
 				float height = terrain_->GetHeight(Vector3(cursorPosition_.x_, 0, cursorPosition_.z_));
 				brushcursornode_->SetPosition(Vector3(cursorPosition_.x_, height + 1, cursorPosition_.z_));
 				brushcursornode_->SetEnabled(true);
