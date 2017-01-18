@@ -204,6 +204,11 @@ bool SceneEditor3D::OnEvent(const TBWidgetEvent &ev)
                 gizmo3D_->SetEditMode(EDIT_SCALE);
                 return false;
             }
+			else if (ev.target->GetID() == TBIDC("terrain_height"))
+			{
+				gizmo3D_->SetEditMode(TERRAIN);
+				return false;
+			}
         }
     }
 

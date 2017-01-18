@@ -110,7 +110,7 @@ namespace AtomicEditor
 				ATOMIC_LOGERROR("Terrain brush error: Octree Missing");
 			brushcursor_->SetEnabled(true);
 			octree->AddManualDrawable(brushcursor_);
-			SubscribeToEvent(E_UPDATE, ATOMIC_HANDLER(TerrainEditor, HandlePostRenderUpdate));
+			SubscribeToEvent(E_POSTRENDERUPDATE, ATOMIC_HANDLER(TerrainEditor, HandlePostRenderUpdate));
 		}
 		else {
 			brushcursor_->SetEnabled(false);
@@ -134,7 +134,7 @@ namespace AtomicEditor
 
 		Ray camRay = sceneview3d_->GetCameraRay();
 
-		RayOctreeQuery query(result_, camRay, RAY_TRIANGLE, sceneEditor3D_->GetSceneView3D()->GetCamera()->GetFarClip(), DRAWABLE_GEOMETRY);
+		RayOctreeQuery query(result_, camRay, RAY_TRIANGLE, sceneEditor3D_->GetSceneView3D()->GetCamera()->GetFarClip() / 2, DRAWABLE_GEOMETRY);
 		sceneEditor3D_->GetSceneView3D()->GetOctree()->Raycast(query);
 
 

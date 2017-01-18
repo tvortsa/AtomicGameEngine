@@ -132,6 +132,7 @@ void Gizmo3D::Position()
             break;
         case TERRAIN:
             Hide();
+			view3D_->GetSceneEditor3D()->GetSelection()->Clear();
             break;
         default:
             break;
