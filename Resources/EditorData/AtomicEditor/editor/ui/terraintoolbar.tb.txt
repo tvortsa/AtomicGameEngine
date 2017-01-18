@@ -22,6 +22,13 @@ TBLayout: axis: y, distribution: gravity, spacing: 10
 			id smoothbutton
 			tooltip Smooth
 			lp: width: 70, height: 30
+		TBButton: toggle-mode: 1
+			@include definitions>menubutton
+			text FLATTEN
+			font: size:10
+			id flattenbutton
+			tooltip Flatten
+			lp: width: 70, height: 30
 	
 		TBLayout: axis: x
 			TBTextField: text: "Size:"

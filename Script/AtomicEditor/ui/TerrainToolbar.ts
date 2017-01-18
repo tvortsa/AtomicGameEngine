@@ -39,7 +39,7 @@ class TerrainToolbar extends Atomic.UIWidget {
         this.raiseButton = <Atomic.UIButton>this.getWidget("raisebutton");
         this.lowerButton = <Atomic.UIButton>this.getWidget("lowerbutton");
         this.smoothButton = <Atomic.UIButton>this.getWidget("smoothbutton");
-     //   this.flattenButton = <Atomic.UIButton>this.getWidget("flattenbutton");
+        this.flattenButton = <Atomic.UIButton>this.getWidget("flattenbutton");
 
         this.brushPower = <Atomic.UIInlineSelect>this.getWidget("brushpower");
         this.brushHardness = <Atomic.UIInlineSelect>this.getWidget("brushhardness");
@@ -48,7 +48,7 @@ class TerrainToolbar extends Atomic.UIWidget {
         this.subscribeToEvent(this, "WidgetEvent", (ev) => this.handleWidgetEvent(ev));
         this.subscribeToEvent(EditorEvents.ActiveSceneEditorChange, (data) => this.handleActiveSceneEditorChanged(data));
         this.subscribeToEvent("TerrainEditModeChanged", (ev) => this.handleTerrainEditModeChanged(ev));
-        
+
         this.raiseButton.setValue(1);
 
         parent.addChild(this);
@@ -79,9 +79,9 @@ class TerrainToolbar extends Atomic.UIWidget {
                     mode = 1;
                 else if (ev.target.id == "smoothbutton")
                     mode = 2;
-                // else if (ev.target.id == "flattenbutton"){
-                //     mode = 3;
-                // }
+                else if (ev.target.id == "flattenbutton"){
+                    mode = 3;
+                }
 
                 this.sendEvent("TerrainEditModeChanged", { mode: mode });
 
@@ -97,7 +97,7 @@ class TerrainToolbar extends Atomic.UIWidget {
         this.raiseButton.value = 0;
         this.lowerButton.value = 0;
         this.smoothButton.value = 0;
-     //   this.flattenButton.value = 0;
+        this.flattenButton.value = 0;
 
         switch (ev.mode) {
             case 0:
@@ -109,9 +109,9 @@ class TerrainToolbar extends Atomic.UIWidget {
             case 2:
                 this.smoothButton.value = 1;
                 break;
-            // case 3:
-            //     this.flattenButton.value = 1;
-            //     break;
+            case 3:
+                this.flattenButton.value = 1;
+                break;
         }
 
         this.terrainEditor.setTerrainEditMode(ev.mode);

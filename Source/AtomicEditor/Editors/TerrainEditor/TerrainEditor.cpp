@@ -304,6 +304,8 @@ namespace AtomicEditor
 			float power = (brushPower_ / max) / 2;
 			float smoothpower = brushPower_ * (30 / terrain_->GetSpacing().y_);
 			float radius = (brushSize_ / terrain_->GetSpacing().x_);
+			if(!flattenHeight_)
+			  flattenHeight_ = cursorPosition_.y_ / (max * terrain_->GetSpacing().y_);
 
 			if (mode_ == TerrainEditMode::RAISE){
 				ApplyHeightBrush(terrain_, i, nullptr, cursorPosition_.x_, cursorPosition_.z_, radius, max, invert * power, brushHardness_, false, dt);
@@ -315,13 +317,17 @@ namespace AtomicEditor
 				ApplyHeightBrush(terrain_, i, nullptr, cursorPosition_.x_, cursorPosition_.z_, radius, max, invert * -power, brushHardness_, false, dt);
 			}
 			else if (mode_ == TerrainEditMode::FLATTEN) {
-				ApplyHeightBrush(terrain_, i, nullptr, cursorPosition_.x_, cursorPosition_.z_, radius, max, invert * -power, brushHardness_, false, dt);
+				ApplyHeightBrush(terrain_, i, nullptr, cursorPosition_.x_, cursorPosition_.z_, radius, flattenHeight_, smoothpower, brushHardness_, false, dt);
 			}
 			terrain_->ApplyHeightMap();
 
             
 			sceneEditor3D_->GetScene()->SendEvent(E_SCENEEDITSCENEMODIFIED);
         }
+		else {
+			flattenHeight_ = NULL;
+		}
+
 		// Code to change brush size using mousewheel. Don't really need it now that it's changed in the UI, but would be nice to have it. 
 		// Will need an event to keep the UI in sync though, so commenting it out for now
         //else if (input->GetMouseMoveWheel() && input->GetKeyDown(KEY_LCTRL) && sceneEditor3D_->GetSceneView3D()->MouseInView())
