@@ -135,36 +135,35 @@ namespace AtomicEditor
 		Ray camRay = sceneview3d_->GetCameraRay();
 
 		RayOctreeQuery query(result_, camRay, RAY_TRIANGLE, sceneEditor3D_->GetSceneView3D()->GetCamera()->GetFarClip(), DRAWABLE_GEOMETRY);
-		sceneEditor3D_->GetSceneView3D()->GetOctree()->RaycastSingle(query);
+		sceneEditor3D_->GetSceneView3D()->GetOctree()->Raycast(query);
 
 
 		if (query.result_.Size())
 		{
 
-			const RayQueryResult& r = result_[0];
-			if (r.drawable_->GetType() == Atomic::TerrainPatch::GetTypeStatic())
+			for (int n = 0; n < result_.Size(); n++)
 			{
+               const RayQueryResult& r = result_[n];
+			   if (r.drawable_->GetType() == Atomic::TerrainPatch::GetTypeStatic())
+			   {
 
-				TerrainPatch* patch = (TerrainPatch*)r.drawable_;
-				terrain_ = patch->GetOwner();
+				   TerrainPatch* patch = (TerrainPatch*)r.drawable_;
+				   terrain_ = patch->GetOwner();
 
-				if (r.distance_ >= 0) {
-					hitpos_ = camRay.origin_ + camRay.direction_ * r.distance_;
-					
-				}
-
-				cursorPosition_ = hitpos_;
-				//ATOMIC_LOGDEBUG(cursorPosition_.ToString());
-				float height = terrain_->GetHeight(Vector3(cursorPosition_.x_, 0, cursorPosition_.z_));
-				brushcursornode_->SetPosition(Vector3(cursorPosition_.x_, height + 1, cursorPosition_.z_));
-				brushcursornode_->SetEnabled(true);
-				Octree* octree = scene_->GetComponent<Octree>();
-				if (!octree)
-					ATOMIC_LOGERROR("Terrain brush error: Octree Missing");
-				octree->AddManualDrawable(brushcursor_);
-				
+				   cursorPosition_ = r.position_;
+				   float height = terrain_->GetHeight(Vector3(cursorPosition_.x_, cursorPosition_.y_, cursorPosition_.z_));
+				   brushcursornode_->SetPosition(Vector3(cursorPosition_.x_, height + 1, cursorPosition_.z_));
+				   brushcursornode_->SetEnabled(true);
+				   Octree* octree = scene_->GetComponent<Octree>();
+				   if (!octree)
+					   ATOMIC_LOGERROR("Terrain brush error: Octree Missing");
+				   octree->AddManualDrawable(brushcursor_);
+				   break;
+			   }
 			}
-			SetBrushCursorHeight(terrain_);
+
+			if(terrain_)
+		    	SetBrushCursorHeight(terrain_);
 		}
 	}
 
@@ -239,7 +238,7 @@ namespace AtomicEditor
     }
 
 	void TerrainEditor::SetBrushHardness(float hardness) {
-		brushHardness_ = hardness;
+		brushHardness_ = hardness - 1;
 	}
 
 	float TerrainEditor::GetBrushHardness() {
@@ -273,6 +272,8 @@ namespace AtomicEditor
 		//	return;
 		//framerateTimer_ = 0;
 
+		float dt = eventData[Update::P_TIMESTEP].GetFloat();
+
 
         Input* input = GetSubsystem<Input>();
 
@@ -286,21 +287,29 @@ namespace AtomicEditor
             IntVector2 v = terrain_->WorldToHeightMap(cursorPosition_);
             Image* i = terrain_->GetHeightMap();
 
+			Vector2 norm = WorldToNormalized(i, terrain_, cursorPosition_);
+			Color col = i->GetPixelBilinear(norm.x_, 1 - norm.y_);
+			float ht = 0;
+			if (i->GetComponents() == 1)
+				ht = col.r_;
+			else
+				ht = col.r_ + col.g_ / 256.0;
+
 			int invert = 1;
 			if (input->GetKeyDown(KEY_LSHIFT))
 				invert = -1;
 
 			if (mode_ == TerrainEditMode::RAISE){
-				ApplyHeightBrush(terrain_, i, nullptr, cursorPosition_.x_, cursorPosition_.z_, brushSize_ / 2, 1.0, invert * (brushPower_ / 100), brushHardness_, false, 1.0);
+				ApplyHeightBrush(terrain_, i, nullptr, cursorPosition_.x_, cursorPosition_.z_, brushSize_ / 2, ht * 10, invert * brushPower_ , brushHardness_, false, dt);
 			}
 			else if (mode_ == TerrainEditMode::SMOOTH || input->GetKeyDown(KEY_LCTRL)){
-				ApplySmoothBrush(terrain_, i, nullptr, cursorPosition_.x_, cursorPosition_.z_, brushSize_ / 2, 1.0, brushPower_, brushHardness_, false, 1.0);
+				ApplySmoothBrush(terrain_, i, nullptr, cursorPosition_.x_, cursorPosition_.z_, brushSize_ / 2, ht * 10, brushPower_ * 10, brushHardness_, false, dt);
 			}
 			else if (mode_ == TerrainEditMode::LOWER) {
-				ApplyHeightBrush(terrain_, i, nullptr, cursorPosition_.x_, cursorPosition_.z_, brushSize_ / 2, 1.0, invert * (-brushPower_ / 100), brushHardness_, false, 1.0);
+				ApplyHeightBrush(terrain_, i, nullptr, cursorPosition_.x_, cursorPosition_.z_, brushSize_ / 2, ht * 10, invert * -brushPower_, brushHardness_, false, dt);
 			}
 			else if (mode_ == TerrainEditMode::FLATTEN) {
-				ApplyHeightBrush(terrain_, i, nullptr, cursorPosition_.x_, cursorPosition_.z_, brushSize_ / 2, 1.0, invert * (-brushPower_ / 100), brushHardness_, false, 1.0);
+				ApplyHeightBrush(terrain_, i, nullptr, cursorPosition_.x_, cursorPosition_.z_, brushSize_ / 2, ht * 10, invert * -brushPower_, brushHardness_, false, dt);
 			}
 			terrain_->ApplyHeightMap();
 
@@ -491,5 +500,16 @@ namespace AtomicEditor
 			image->SavePNG(imageFile);
 			ATOMIC_LOGDEBUG("Saved terrain as " + imageFile);
 		}
+	}
+
+	Vector2 TerrainEditor::WorldToNormalized(Image *height, Terrain *terrain, Vector3 world)
+	{
+		if (!terrain || !height) return Vector2(0, 0);
+		Vector3 spacing = terrain->GetSpacing();
+		int patchSize = terrain->GetPatchSize();
+		IntVector2 numPatches = IntVector2((height->GetWidth() - 1) / patchSize, (height->GetHeight() - 1) / patchSize);
+		Vector2 patchWorldSize = Vector2(spacing.x_*(float)(patchSize*numPatches.x_), spacing.z_*(float)(patchSize*numPatches.y_));
+		Vector2 patchWorldOrigin = Vector2(-0.5f * patchWorldSize.x_, -0.5f * patchWorldSize.y_);
+		return Vector2((world.x_ - patchWorldOrigin.x_) / patchWorldSize.x_, (world.z_ - patchWorldOrigin.y_) / patchWorldSize.y_);
 	}
 }

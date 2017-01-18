@@ -113,6 +113,7 @@ namespace AtomicEditor
 		SharedPtr<SceneView3D> sceneview3d_;
 		TerrainEditMode mode_;
 
+		Vector2 WorldToNormalized(Image *height, Terrain *terrain, Vector3 world);
 		SharedPtr<Node> brushcursornode_;
 		SharedPtr<CustomGeometry> brushcursor_;
 		SharedPtr<Material> brushmat_;
