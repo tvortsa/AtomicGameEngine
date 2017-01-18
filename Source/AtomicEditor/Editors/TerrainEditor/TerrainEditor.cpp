@@ -127,8 +127,10 @@ namespace AtomicEditor
 
 	void TerrainEditor::UpdateTerrainCursor()
 	{
-		if (!sceneEditor3D_->GetSceneView3D()->MouseInView())
+		if (!sceneEditor3D_->GetSceneView3D()->MouseInView()) {
 			brushcursornode_->SetEnabled(false);
+			return;
+		}
 
 		Ray camRay = sceneview3d_->GetCameraRay();
 
@@ -160,11 +162,9 @@ namespace AtomicEditor
 				if (!octree)
 					ATOMIC_LOGERROR("Terrain brush error: Octree Missing");
 				octree->AddManualDrawable(brushcursor_);
-				SetBrushCursorHeight(terrain_);
+				
 			}
-			else {
-				return;
-			}
+			SetBrushCursorHeight(terrain_);
 		}
 	}
 
