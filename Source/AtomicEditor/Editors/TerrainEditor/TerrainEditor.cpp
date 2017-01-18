@@ -76,18 +76,21 @@ namespace AtomicEditor
 		hitpos_ = Vector3::ZERO;
         spacing_ = Vector3::ONE;
 		mode_ = TerrainEditMode::RAISE;
-
-		//sceneview3d_->GetCamera()->SetFillMode(Atomic::FillMode::FILL_WIREFRAME);
-        brushcursornode_ = scene_->CreateChild();
-        brushcursornode_->SetTemporary(true);
-        brushcursor_ = brushcursornode_->CreateComponent<CustomGeometry>();
-        brushSize_ = 5.0f;
-        
         ResourceCache* cache = GetSubsystem<ResourceCache>();
-        brushcursor_->SetMaterial(cache->GetResource<Material>("Materials/TerrainCursor.xml"));
+		//sceneview3d_->GetCamera()->SetFillMode(Atomic::FillMode::FILL_WIREFRAME);
+        //brushcursornode_ = scene_->CreateChild();
+		brushcursornode_ = new Node(context_);
+       // brushcursornode_->SetTemporary(true);
+        brushcursor_ = brushcursornode_->CreateComponent<CustomGeometry>();
+		brushcursor_->SetEnabled(false);
+		brushcursor_->SetViewMask(0x80000000); // Editor raycasts use viewmask 0x7fffffff
+		brushcursor_->SetOccludee(false);
+		brushcursor_->SetMaterial(cache->GetResource<Material>("Materials/TerrainCursor.xml"));
+		brushcursornode_->SetPosition(Vector3(0, 0, 0));
+        brushSize_ = 5.0f;
 
 		SubscribeToEvent(E_GIZMOEDITMODECHANGED, ATOMIC_HANDLER(TerrainEditor, HandleGizmoEditModeChanged));
-		SubscribeToEvent(E_FILECHANGED, ATOMIC_HANDLER(TerrainEditor, FileSaveHandler));
+		SubscribeToEvent(E_FILECHANGED, ATOMIC_HANDLER(TerrainEditor, FileSaveHandler));	
     }
 
     TerrainEditor::~TerrainEditor()
@@ -98,10 +101,16 @@ namespace AtomicEditor
 
 	void TerrainEditor::HandleGizmoEditModeChanged(StringHash eventType, VariantMap& eventData)
 	{
+
+
 		EditMode mode = (EditMode)(eventData[GizmoEditModeChanged::P_MODE].GetInt());
 		if (mode == EditMode::TERRAIN) {
+			Octree* octree = scene_->GetComponent<Octree>();
+			if (!octree)
+				ATOMIC_LOGERROR("Terrain brush error: Octree Missing");
 			brushcursor_->SetEnabled(true);
-			SubscribeToEvent(E_POSTRENDERUPDATE, ATOMIC_HANDLER(TerrainEditor, HandlePostRenderUpdate));
+			octree->AddManualDrawable(brushcursor_);
+			SubscribeToEvent(E_UPDATE, ATOMIC_HANDLER(TerrainEditor, HandlePostRenderUpdate));
 		}
 		else {
 			brushcursor_->SetEnabled(false);
@@ -147,6 +156,10 @@ namespace AtomicEditor
 				float height = terrain_->GetHeight(Vector3(cursorPosition_.x_, 0, cursorPosition_.z_));
 				brushcursornode_->SetPosition(Vector3(cursorPosition_.x_, height + 1, cursorPosition_.z_));
 				brushcursornode_->SetEnabled(true);
+				Octree* octree = scene_->GetComponent<Octree>();
+				if (!octree)
+					ATOMIC_LOGERROR("Terrain brush error: Octree Missing");
+				octree->AddManualDrawable(brushcursor_);
 				SetBrushCursorHeight(terrain_);
 			}
 			else {
@@ -278,16 +291,16 @@ namespace AtomicEditor
 				invert = -1;
 
 			if (mode_ == TerrainEditMode::RAISE){
-				ApplyHeightBrush(terrain_, i, nullptr, cursorPosition_.x_, cursorPosition_.z_, brushSize_, 0.5, invert * (brushPower_ / 100), brushHardness_, false, 1.0);
+				ApplyHeightBrush(terrain_, i, nullptr, cursorPosition_.x_, cursorPosition_.z_, brushSize_ / 2, 1.0, invert * (brushPower_ / 100), brushHardness_, false, 1.0);
 			}
 			else if (mode_ == TerrainEditMode::SMOOTH || input->GetKeyDown(KEY_LCTRL)){
-				ApplySmoothBrush(terrain_, i, nullptr, cursorPosition_.x_, cursorPosition_.z_, brushSize_, 0.5, brushPower_, brushHardness_, false, 1.0);
+				ApplySmoothBrush(terrain_, i, nullptr, cursorPosition_.x_, cursorPosition_.z_, brushSize_ / 2, 1.0, brushPower_, brushHardness_, false, 1.0);
 			}
 			else if (mode_ == TerrainEditMode::LOWER) {
-				ApplyHeightBrush(terrain_, i, nullptr, cursorPosition_.x_, cursorPosition_.z_, brushSize_, 0.5, invert * (-brushPower_ / 100), brushHardness_, false, 1.0);
+				ApplyHeightBrush(terrain_, i, nullptr, cursorPosition_.x_, cursorPosition_.z_, brushSize_ / 2, 1.0, invert * (-brushPower_ / 100), brushHardness_, false, 1.0);
 			}
 			else if (mode_ == TerrainEditMode::FLATTEN) {
-				ApplyHeightBrush(terrain_, i, nullptr, cursorPosition_.x_, cursorPosition_.z_, brushSize_, 0.5, invert * (-brushPower_ / 100), brushHardness_, false, 1.0);
+				ApplyHeightBrush(terrain_, i, nullptr, cursorPosition_.x_, cursorPosition_.z_, brushSize_ / 2, 1.0, invert * (-brushPower_ / 100), brushHardness_, false, 1.0);
 			}
 			terrain_->ApplyHeightMap();
 
