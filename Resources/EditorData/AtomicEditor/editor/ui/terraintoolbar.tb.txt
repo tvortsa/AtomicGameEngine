@@ -33,5 +33,5 @@ TBLayout: axis: y, distribution: gravity, spacing: 10
 				lp: width: 80, height: 30		
 		TBLayout: axis: x
 			TBTextField: text: "Hardness:"
-			TBInlineSelect: id: brushhardness, min: 1, max: 10, value: 5	
+			TBInlineSelect: id: brushhardness, min: 1, max: 9, value: 5	
 				lp: width: 80, height: 30

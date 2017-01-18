@@ -238,7 +238,7 @@ namespace AtomicEditor
     }
 
 	void TerrainEditor::SetBrushHardness(float hardness) {
-		brushHardness_ = hardness - 1;
+		brushHardness_ = hardness;
 	}
 
 	float TerrainEditor::GetBrushHardness() {
@@ -289,27 +289,33 @@ namespace AtomicEditor
 
 			Vector2 norm = WorldToNormalized(i, terrain_, cursorPosition_);
 			Color col = i->GetPixelBilinear(norm.x_, 1 - norm.y_);
-			float ht = 0;
-			if (i->GetComponents() == 1)
-				ht = col.r_;
-			else
-				ht = col.r_ + col.g_ / 256.0;
+			//float ht = 0;
+			//if (i->GetComponents() == 1)
+			//	ht = col.r_;
+			//else
+			//	ht = col.r_ + col.g_ / 256.0;
 
 			int invert = 1;
 			if (input->GetKeyDown(KEY_LSHIFT))
 				invert = -1;
 
+			//float max = 1000 / terrain_->GetSpacing().y_;#
+			float max = 256;
+			float power = (brushPower_ / max) / 2;
+			float smoothpower = brushPower_ * (30 / terrain_->GetSpacing().y_);
+			float radius = (brushSize_ / terrain_->GetSpacing().x_);
+
 			if (mode_ == TerrainEditMode::RAISE){
-				ApplyHeightBrush(terrain_, i, nullptr, cursorPosition_.x_, cursorPosition_.z_, brushSize_ / 2, ht * 10, invert * brushPower_ , brushHardness_, false, dt);
+				ApplyHeightBrush(terrain_, i, nullptr, cursorPosition_.x_, cursorPosition_.z_, radius, max, invert * power, brushHardness_, false, dt);
 			}
 			else if (mode_ == TerrainEditMode::SMOOTH || input->GetKeyDown(KEY_LCTRL)){
-				ApplySmoothBrush(terrain_, i, nullptr, cursorPosition_.x_, cursorPosition_.z_, brushSize_ / 2, ht * 10, brushPower_ * 10, brushHardness_, false, dt);
+				ApplySmoothBrush(terrain_, i, nullptr, cursorPosition_.x_, cursorPosition_.z_, radius, max, smoothpower, brushHardness_, false, dt);
 			}
 			else if (mode_ == TerrainEditMode::LOWER) {
-				ApplyHeightBrush(terrain_, i, nullptr, cursorPosition_.x_, cursorPosition_.z_, brushSize_ / 2, ht * 10, invert * -brushPower_, brushHardness_, false, dt);
+				ApplyHeightBrush(terrain_, i, nullptr, cursorPosition_.x_, cursorPosition_.z_, radius, max, invert * -power, brushHardness_, false, dt);
 			}
 			else if (mode_ == TerrainEditMode::FLATTEN) {
-				ApplyHeightBrush(terrain_, i, nullptr, cursorPosition_.x_, cursorPosition_.z_, brushSize_ / 2, ht * 10, invert * -brushPower_, brushHardness_, false, dt);
+				ApplyHeightBrush(terrain_, i, nullptr, cursorPosition_.x_, cursorPosition_.z_, radius, max, invert * -power, brushHardness_, false, dt);
 			}
 			terrain_->ApplyHeightMap();
 
@@ -362,7 +368,7 @@ namespace AtomicEditor
                     float dx = (float)(hx - ht.x_);
                     float dz = (float)(hz - ht.y_);
                     float d = std::sqrt(dx*dx + dz*dz);
-                    float i = ((d - radius) / (hardness*radius - radius));
+					float i = ((d - radius) / (hardness*radius - radius));
                     i = std::max(0.0f, std::min(1.0f, i));
                     i = i*dt*power;
                     if (usemask)
