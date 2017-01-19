@@ -287,23 +287,14 @@ namespace AtomicEditor
             IntVector2 v = terrain_->WorldToHeightMap(cursorPosition_);
             Image* i = terrain_->GetHeightMap();
 
-			Vector2 norm = WorldToNormalized(i, terrain_, cursorPosition_);
-			Color col = i->GetPixelBilinear(norm.x_, 1 - norm.y_);
-			//float ht = 0;
-			//if (i->GetComponents() == 1)
-			//	ht = col.r_;
-			//else
-			//	ht = col.r_ + col.g_ / 256.0;
-
 			int invert = 1;
 			if (input->GetKeyDown(KEY_LSHIFT))
 				invert = -1;
 
-			//float max = 1000 / terrain_->GetSpacing().y_;#
-			float max = 256;
-			float power = (brushPower_ / max) / 2;
-			float smoothpower = brushPower_ * (30 / terrain_->GetSpacing().y_);
-			float radius = (brushSize_ / terrain_->GetSpacing().x_);
+			float max = 256 * terrain_->GetSpacing().y_;
+			float power = brushPower_ / (max * 4);
+			float smoothpower = brushPower_ * 2;
+			float radius = brushSize_ / terrain_->GetSpacing().x_;
 			if(!flattenHeight_)
 			  flattenHeight_ = cursorPosition_.y_ / (max * terrain_->GetSpacing().y_);
 

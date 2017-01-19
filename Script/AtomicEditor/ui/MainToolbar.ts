@@ -59,7 +59,7 @@ class MainToolbar extends Atomic.UIWidget {
 
         this.subscribeToEvent("GizmoAxisModeChanged", (ev) => this.handleGizmoAxisModeChanged(ev));
         this.subscribeToEvent("GizmoEditModeChanged", (ev) => this.handleGizmoEditModeChanged(ev));
-
+        this.subscribeToEvent(EditorEvents.SceneClosed, (data) => this.handleSceneClosed(data));
         this.subscribeToEvent(this, "WidgetEvent", (data) => this.handleWidgetEvent(data));
 
         this.subscribeToEvent(EditorEvents.PlayerStarted, (data) => {
@@ -111,6 +111,7 @@ class MainToolbar extends Atomic.UIWidget {
         this.rotateButton.value = 0;
         this.scaleButton.value = 0;
         this.heightmapButton.value = 0;
+        EditorUI.getMainFrame().hideTerrainToolbar();
 
         switch (ev.mode) {
             case 1:
@@ -124,6 +125,7 @@ class MainToolbar extends Atomic.UIWidget {
                 break;
             case 4:
                 this.heightmapButton.value = 1;
+                EditorUI.getMainFrame().showTerrainToolbar();
                 break;
         }
 
@@ -143,11 +145,6 @@ class MainToolbar extends Atomic.UIWidget {
                 else if (ev.target.id == "terrain_height"){
                     mode = 4;
                 }
-
-                if(mode == 4)
-                  EditorUI.getMainFrame().showTerrainToolbar();
-                else
-                  EditorUI.getMainFrame().hideTerrainToolbar();
 
                 this.sendEvent("GizmoEditModeChanged", { mode: mode });
 
@@ -173,6 +170,10 @@ class MainToolbar extends Atomic.UIWidget {
 
         }
 
+    }
+
+    handleSceneClosed(ev: EditorEvents.SceneClosedEvent) {
+        this.sendEvent("GizmoEditModeChanged", { mode: 0 });
     }
 
 }
