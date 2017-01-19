@@ -82,6 +82,7 @@ namespace AtomicEditor
 		brushcursornode_ = new Node(context_);
        // brushcursornode_->SetTemporary(true);
         brushcursor_ = brushcursornode_->CreateComponent<CustomGeometry>();
+		brushcursornode_->SetTemporary(true);
 		brushcursor_->SetEnabled(false);
 		brushcursor_->SetViewMask(0x80000000); // Editor raycasts use viewmask 0x7fffffff
 		brushcursor_->SetOccludee(false);
@@ -296,7 +297,7 @@ namespace AtomicEditor
 			float smoothpower = brushPower_ * 2;
 			float radius = brushSize_ / terrain_->GetSpacing().x_;
 			if(!flattenHeight_)
-			  flattenHeight_ = cursorPosition_.y_ / (max * terrain_->GetSpacing().y_);
+			  flattenHeight_ = cursorPosition_.y_ / max;
 
 			if (mode_ == TerrainEditMode::RAISE){
 				ApplyHeightBrush(terrain_, i, nullptr, cursorPosition_.x_, cursorPosition_.z_, radius, max, invert * power, brushHardness_, false, dt);
@@ -494,7 +495,7 @@ namespace AtomicEditor
 		using namespace FileChanged;
 		const String& fileName = eventData[P_FILENAME].GetString();
         
-		if (fileName == scene_->GetFileName())
+		if (fileName == scene_->GetFileName() && terrain_)
 		{
 			Image* image = terrain_->GetHeightMap();
 			ResourceCache* cache = GetSubsystem<ResourceCache>();
