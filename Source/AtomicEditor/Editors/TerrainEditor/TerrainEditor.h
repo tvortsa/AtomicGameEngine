@@ -36,6 +36,8 @@
 #include <Atomic/UI/UISlider.h>
 #include <AtomicEditor/Editors/SceneEditor3D/SceneView3D.h>
 
+#include <Atomic/Environment/GeomReplicator.h>
+
 using namespace Atomic;
 
 namespace Atomic
@@ -120,6 +122,15 @@ namespace AtomicEditor
 		SharedPtr<Material> brushmat_;
 		void BuildCursorMesh(float radius, Vector3 spacing);
 		void FileSaveHandler(StringHash eventType, VariantMap& eventData);
+
+		//Grass stuff
+		PODVector<PRotScale> qpList_;
+		// replicator
+		SharedPtr<GeomReplicator> vegReplicator_;
+		WeakPtr<Node> nodeRep_;
+
+		void DrawGrass(Terrain* terrain);
+		SharedPtr<Terrain> lastTerrain_;
 	};
 
 

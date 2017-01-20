@@ -24,6 +24,7 @@
 #include "Environment.h"
 #include "TimeOfDay.h"
 #include "ProcSky.h"
+#include "GeomReplicator.h"
 
 namespace Atomic
 {
@@ -32,6 +33,7 @@ void RegisterEnvironmentLibrary(Context* context)
 {
     ProcSky::RegisterObject(context);
     TimeOfDay::RegisterObject(context);
+	GeomReplicator::RegisterObject(context);
 
 }
 
