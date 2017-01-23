@@ -35,8 +35,8 @@
 #include <Atomic/UI/UIWindow.h>
 #include <Atomic/UI/UISlider.h>
 #include <AtomicEditor/Editors/SceneEditor3D/SceneView3D.h>
-
 #include <Atomic/Environment/GeomReplicator.h>
+#include "ColorMap.h"
 
 using namespace Atomic;
 
@@ -79,11 +79,15 @@ namespace AtomicEditor
 		void SetBrushPower(float power);
 		float GetBrushPower();
 
+		void SetPaintLayer(int layer);
+		int GetPaintLayer();
+
 		void SetTerrainEditMode(TerrainEditMode mode);
 		float GetTerrainEditMode();
 		bool Revert();
 
-
+	protected:
+		SharedPtr<ColorMap> colorMap_;
 
 	private:
 		void HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData);
@@ -96,6 +100,7 @@ namespace AtomicEditor
 		void HandleNodeAdded(StringHash eventType, VariantMap & eventData);
 		void UpdateTerrainCursor();
 		void SetBrushCursorHeight(Terrain* terrain);
+		void ApplyBlendBrush(Terrain *terrain, Image *height, ColorMap *blend, Image *mask, float x, float z, float radius, float mx, float power, float hardness, int layer, bool usemask, float dt);
 
 		float framerateTimer_;
 		Vector3 cursorPosition_;
@@ -115,6 +120,7 @@ namespace AtomicEditor
 		SharedPtr<SceneView3D> sceneview3d_;
 		TerrainEditMode mode_;
 		float flattenHeight_;
+		int paintLayer_;
 
 		Vector2 WorldToNormalized(Image *height, Terrain *terrain, Vector3 world);
 		SharedPtr<Node> brushcursornode_;
@@ -131,6 +137,8 @@ namespace AtomicEditor
 
 		void DrawGrass(Terrain* terrain);
 		SharedPtr<Terrain> lastTerrain_;
+		SharedPtr<Material> terrainMaterial_;
+		SharedPtr<Texture2D> weightTexture_;
 	};
 
 

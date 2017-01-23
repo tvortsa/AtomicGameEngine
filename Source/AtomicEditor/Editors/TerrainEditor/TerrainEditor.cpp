@@ -214,11 +214,15 @@ namespace AtomicEditor
 
 				   TerrainPatch* patch = (TerrainPatch*)r.drawable_;
 				   terrain_ = patch->GetOwner();
-				   //ENABLE THIS TO TEST GRASS
-				   //if (terrain_ != lastTerrain_) {
+				   if (terrain_ != lastTerrain_) {
+					 terrainMaterial_ = terrain_->GetMaterial();
+				     weightTexture_ = (Texture2D*)terrainMaterial_->GetTexture(TU_DIFFUSE);
+					 colorMap_ = new ColorMap(context_);
+				     colorMap_->SetSourceColorMap(weightTexture_);
+				      //ENABLE THIS TO TEST GRASS
 					  // DrawGrass(terrain_);
 					  // lastTerrain_ = terrain_;
-				   //}
+				   }
 
 				   cursorPosition_ = r.position_;
 				   float height = terrain_->GetHeight(Vector3(cursorPosition_.x_, cursorPosition_.y_, cursorPosition_.z_));
@@ -331,6 +335,14 @@ namespace AtomicEditor
 		return mode_;
 	}
 
+	void TerrainEditor::SetPaintLayer(int layer) {
+		paintLayer_ = layer;
+	}
+
+	int TerrainEditor::GetPaintLayer() {
+		return paintLayer_;
+	}
+
 
     void TerrainEditor::HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData)
     {
@@ -347,15 +359,17 @@ namespace AtomicEditor
 
         Input* input = GetSubsystem<Input>();
 
-        if (input->GetMouseButtonDown(MOUSEB_LEFT) && sceneEditor3D_->GetSceneView3D()->MouseInView())
-        {
+		if (input->GetMouseButtonDown(MOUSEB_LEFT) && sceneEditor3D_->GetSceneView3D()->MouseInView())
+		{
 			if (!terrain_) {
 				ATOMIC_LOGDEBUG("No terrain");
 				return;
 			}
 
-            IntVector2 v = terrain_->WorldToHeightMap(cursorPosition_);
-            Image* i = terrain_->GetHeightMap();
+			IntVector2 v = terrain_->WorldToHeightMap(cursorPosition_);
+			Image* heightmap = terrain_->GetHeightMap();
+
+
 
 			int invert = 1;
 			if (input->GetKeyDown(KEY_LSHIFT))
@@ -365,23 +379,33 @@ namespace AtomicEditor
 			float power = brushPower_ / (max * 4);
 			float smoothpower = brushPower_ * 2;
 			float radius = brushSize_ / terrain_->GetSpacing().x_;
-			if(!flattenHeight_)
-			  flattenHeight_ = cursorPosition_.y_ / max;
+			float layer = 2;
 
-			if (mode_ == TerrainEditMode::RAISE){
-				ApplyHeightBrush(terrain_, i, nullptr, cursorPosition_.x_, cursorPosition_.z_, radius, max, invert * power, brushHardness_, false, dt);
+			if (!flattenHeight_)
+				flattenHeight_ = cursorPosition_.y_ / max;
+
+			if (mode_ == TerrainEditMode::RAISE) {
+				ApplyHeightBrush(terrain_, heightmap, nullptr, cursorPosition_.x_, cursorPosition_.z_, radius, max, invert * power, brushHardness_, false, dt);
 			}
-			else if (mode_ == TerrainEditMode::SMOOTH || input->GetKeyDown(KEY_LCTRL)){
-				ApplySmoothBrush(terrain_, i, nullptr, cursorPosition_.x_, cursorPosition_.z_, radius, max, smoothpower, brushHardness_, false, dt);
+			else if (mode_ == TerrainEditMode::SMOOTH || input->GetKeyDown(KEY_LCTRL)) {
+				ApplySmoothBrush(terrain_, heightmap, nullptr, cursorPosition_.x_, cursorPosition_.z_, radius, max, smoothpower, brushHardness_, false, dt);
 			}
 			else if (mode_ == TerrainEditMode::LOWER) {
-				ApplyHeightBrush(terrain_, i, nullptr, cursorPosition_.x_, cursorPosition_.z_, radius, max, invert * -power, brushHardness_, false, dt);
+				ApplyHeightBrush(terrain_, heightmap, nullptr, cursorPosition_.x_, cursorPosition_.z_, radius, max, invert * -power, brushHardness_, false, dt);
 			}
 			else if (mode_ == TerrainEditMode::FLATTEN) {
-				ApplyHeightBrush(terrain_, i, nullptr, cursorPosition_.x_, cursorPosition_.z_, radius, flattenHeight_, smoothpower, brushHardness_, false, dt);
+				ApplyHeightBrush(terrain_, heightmap, nullptr, cursorPosition_.x_, cursorPosition_.z_, radius, flattenHeight_, smoothpower, brushHardness_, false, dt);
 			}
-			terrain_->ApplyHeightMap();
+			else if (mode_ == TerrainEditMode::PAINT) {
+				ApplyBlendBrush(terrain_, heightmap, colorMap_, nullptr, cursorPosition_.x_, cursorPosition_.z_, radius, max, invert * brushPower_, brushHardness_, paintLayer_, false, dt);
+			}
 
+			if (mode_ != TerrainEditMode::PAINT) {
+				terrain_->ApplyHeightMap();
+			}
+			else {
+				colorMap_->ApplyColorMap();
+			}
             
 			sceneEditor3D_->GetScene()->SendEvent(E_SCENEEDITSCENEMODIFIED);
         }
@@ -566,12 +590,17 @@ namespace AtomicEditor
         
 		if (fileName == scene_->GetFileName() && terrain_)
 		{
-			Image* image = terrain_->GetHeightMap();
+			Image* heightmap = terrain_->GetHeightMap();
 			ResourceCache* cache = GetSubsystem<ResourceCache>();
-			String imageName = image->GetName();
-			String imageFile = cache->GetResourceFileName(imageName);
-			image->SavePNG(imageFile);
-			ATOMIC_LOGDEBUG("Saved terrain as " + imageFile);
+			String heightmapName = heightmap->GetName();
+			String heightmapFile = cache->GetResourceFileName(heightmapName);
+			heightmap->SavePNG(heightmapFile);
+			ATOMIC_LOGDEBUG("Saved terrain as " + heightmapFile);
+
+			String blendmapName = weightTexture_->GetName();
+			String blendmapFile = cache->GetResourceFileName(blendmapName);
+			colorMap_->SavePNG(blendmapFile);
+
 		}
 	}
 
@@ -584,5 +613,79 @@ namespace AtomicEditor
 		Vector2 patchWorldSize = Vector2(spacing.x_*(float)(patchSize*numPatches.x_), spacing.z_*(float)(patchSize*numPatches.y_));
 		Vector2 patchWorldOrigin = Vector2(-0.5f * patchWorldSize.x_, -0.5f * patchWorldSize.y_);
 		return Vector2((world.x_ - patchWorldOrigin.x_) / patchWorldSize.x_, (world.z_ - patchWorldOrigin.y_) / patchWorldSize.y_);
+	}
+
+
+	void TerrainEditor::ApplyBlendBrush(Terrain *terrain, Image *height, ColorMap *blend, Image *mask, float x, float z, float radius, float mx, float power, float hardness, int layer, bool usemask, float dt)
+	{
+		if (!blend || !height || !terrain) return;
+
+		Vector2 normalized = WorldToNormalized(height, terrain, Vector3(x, 0, z));
+		float ratio = ((float)blend->GetWidth() / (float)height->GetWidth());
+		int ix = (normalized.x_*(float)(blend->GetWidth() - 1));
+		int iy = (normalized.y_*(float)(blend->GetHeight() - 1));
+		iy = blend->GetHeight() - iy;
+		float rad = radius*ratio;
+		int sz = rad + 1;
+
+		for (int hx = ix - sz; hx <= ix + sz; ++hx)
+		{
+			for (int hz = iy - sz; hz <= iy + sz; ++hz)
+			{
+				if (hx >= 0 && hx<blend->GetWidth() && hz >= 0 && hz<blend->GetHeight())
+				{
+					float dx = (float)hx - (float)ix;
+					float dz = (float)hz - (float)iy;
+					float d = std::sqrt(dx*dx + dz*dz);
+					float i = ((d - rad) / (hardness*rad - rad));
+					i = std::max(0.0f, std::min(1.0f, i));
+					i = i*dt*power;
+					if (usemask)
+					{
+						float m = mask->GetPixelBilinear((float)(hx) / (float)(blend->GetWidth()), (float)(hz) / (float)(blend->GetHeight())).r_;
+						i = i*m;
+					}
+					Color col = blend->GetPixel(hx, hz);
+					if (layer == 1)
+					{
+						col.r_ = col.r_ + i*(1.0f - col.r_);
+						col.r_ = std::min(1.0f, col.r_);
+						float others = col.g_ + col.b_ + col.a_;
+						col.g_ = (col.g_ / others)*(1.0f - col.r_);
+						col.b_ = (col.b_ / others)*(1.0f - col.r_);
+						col.a_ = (col.a_ / others)*(1.0f - col.r_);
+					}
+					else if (layer == 2)
+					{
+						col.g_ = col.g_ + i*(1.0f - col.g_);
+						col.g_ = std::min(1.0f, col.g_);
+						float others = col.r_ + col.b_ + col.a_;
+						col.r_ = (col.r_ / others)*(1.0f - col.g_);
+						col.b_ = (col.b_ / others)*(1.0f - col.g_);
+						col.a_ = (col.a_ / others)*(1.0f - col.g_);
+					}
+					else if (layer == 3)
+					{
+						col.b_ = col.b_ + i*(1.0f - col.b_);
+						col.b_ = std::min(1.0f, col.b_);
+						float others = col.r_ + col.g_ + col.a_;
+						col.r_ = (col.r_ / others)*(1.0f - col.b_);
+						col.g_ = (col.g_ / others)*(1.0f - col.b_);
+						col.a_ = (col.a_ / others)*(1.0f - col.b_);
+					}
+					else if (layer == 4)
+					{
+						col.a_ = col.a_ + i*(1.0f - col.a_);
+						col.a_ = std::min(1.0f, col.a_);
+						float others = col.r_ + col.g_ + col.b_;
+						col.r_ = (col.r_ / others)*(1.0f - col.a_);
+						col.g_ = (col.g_ / others)*(1.0f - col.a_);
+						col.b_ = (col.b_ / others)*(1.0f - col.a_);
+					}
+					blend->SetPixel(hx, hz, col);
+					//LOGINFO(String(col.r_)+String(",")+String(col.g_));
+				}
+			}
+		}
 	}
 }

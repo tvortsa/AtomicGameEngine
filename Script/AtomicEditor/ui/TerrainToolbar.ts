@@ -40,10 +40,12 @@ class TerrainToolbar extends Atomic.UIWidget {
         this.lowerButton = <Atomic.UIButton>this.getWidget("lowerbutton");
         this.smoothButton = <Atomic.UIButton>this.getWidget("smoothbutton");
         this.flattenButton = <Atomic.UIButton>this.getWidget("flattenbutton");
+        this.paintButton = <Atomic.UIButton>this.getWidget("paintbutton");
 
         this.brushPower = <Atomic.UIInlineSelect>this.getWidget("brushpower");
         this.brushHardness = <Atomic.UIInlineSelect>this.getWidget("brushhardness");
         this.brushSize = <Atomic.UIInlineSelect>this.getWidget("brushsize");
+        this.paintLayer  = <Atomic.UIInlineSelect>this.getWidget("paintlayer");
 
         this.subscribeToEvent(this, "WidgetEvent", (ev) => this.handleWidgetEvent(ev));
         this.subscribeToEvent(EditorEvents.ActiveSceneEditorChange, (data) => this.handleActiveSceneEditorChanged(data));
@@ -69,11 +71,15 @@ class TerrainToolbar extends Atomic.UIWidget {
             else if (ev.target.id == "brushsize") {
              this.terrainEditor.setBrushSize(this.brushSize.value);
             }
+            else if (ev.target.id == "paintlayer") {
+             this.terrainEditor.setPaintLayer(this.paintLayer.value);
+            }
        }
        else if (ev.type == Atomic.UI_EVENT_TYPE.UI_EVENT_TYPE_CLICK && ev.target) {
 
             if (ev.target.id == "raisebutton" || ev.target.id == "lowerbutton"
-                 || ev.target.id == "flattenbutton" || ev.target.id == "smoothbutton") {
+                 || ev.target.id == "flattenbutton" || ev.target.id == "smoothbutton"
+                 || ev.target.id == "paintbutton") {
                 var mode = 0;
                 if (ev.target.id == "lowerbutton")
                     mode = 1;
@@ -81,6 +87,9 @@ class TerrainToolbar extends Atomic.UIWidget {
                     mode = 2;
                 else if (ev.target.id == "flattenbutton"){
                     mode = 3;
+                }
+                else if (ev.target.id == "paintbutton"){
+                    mode = 5;
                 }
 
                 this.sendEvent("TerrainEditModeChanged", { mode: mode });
@@ -98,6 +107,7 @@ class TerrainToolbar extends Atomic.UIWidget {
         this.lowerButton.value = 0;
         this.smoothButton.value = 0;
         this.flattenButton.value = 0;
+        this.paintButton.value = 0;
 
         switch (ev.mode) {
             case 0:
@@ -111,6 +121,9 @@ class TerrainToolbar extends Atomic.UIWidget {
                 break;
             case 3:
                 this.flattenButton.value = 1;
+                break;
+            case 5:
+                this.paintButton.value = 1;
                 break;
         }
 
@@ -131,9 +144,11 @@ class TerrainToolbar extends Atomic.UIWidget {
         this.terrainEditor.setBrushPower(0.5);
         this.terrainEditor.setBrushSize(5);
         this.terrainEditor.setBrushHardness(0.5);
+        this.terrainEditor.setPaintLayer(1);
         this.brushHardness.setValue(5);
         this.brushPower.setValue(5);
         this.brushSize.setValue(5);
+        this.paintLayer.setValue(1);
 
         if (this.scene) {
             this.unsubscribeFromEvents(this.scene);
@@ -152,9 +167,11 @@ class TerrainToolbar extends Atomic.UIWidget {
     lowerButton: Atomic.UIButton;
     smoothButton: Atomic.UIButton;
     flattenButton: Atomic.UIButton;
+    paintButton: Atomic.UIButton;
     brushHardness: Atomic.UIInlineSelect;
     brushPower: Atomic.UIInlineSelect;
     brushSize: Atomic.UIInlineSelect;
+    paintLayer: Atomic.UIInlineSelect;
 }
 
 interface TerrainEditModeChangedEvent extends Atomic.NativeEvent {

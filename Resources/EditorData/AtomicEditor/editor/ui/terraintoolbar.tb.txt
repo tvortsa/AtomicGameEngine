@@ -29,6 +29,13 @@ TBLayout: axis: y, distribution: gravity, spacing: 10
 			id flattenbutton
 			tooltip Flatten
 			lp: width: 70, height: 30
+		TBButton: toggle-mode: 1
+			@include definitions>menubutton
+			text PAINT
+			font: size:10
+			id paintbutton
+			tooltip Paint
+			lp: width: 70, height: 30
 	
 		TBLayout: axis: x
 			TBTextField: text: "Size:"
@@ -41,4 +48,8 @@ TBLayout: axis: y, distribution: gravity, spacing: 10
 		TBLayout: axis: x
 			TBTextField: text: "Hardness:"
 			TBInlineSelect: id: brushhardness, min: 1, max: 9, value: 5	
+				lp: width: 80, height: 30
+		TBLayout: axis: x
+			TBTextField: text: "Paint Layer:"
+			TBInlineSelect: id: paintlayer, min: 1, max: 8, value: 1	
 				lp: width: 80, height: 30
