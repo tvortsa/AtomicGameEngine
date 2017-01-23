@@ -199,7 +199,7 @@ namespace AtomicEditor
 
 		Ray camRay = sceneview3d_->GetCameraRay();
 
-		RayOctreeQuery query(result_, camRay, RAY_TRIANGLE, sceneEditor3D_->GetSceneView3D()->GetCamera()->GetFarClip() / 2, DRAWABLE_GEOMETRY);
+		RayOctreeQuery query(result_, camRay, RAY_TRIANGLE, sceneEditor3D_->GetSceneView3D()->GetCamera()->GetFarClip(), DRAWABLE_GEOMETRY);
 		sceneEditor3D_->GetSceneView3D()->GetOctree()->Raycast(query);
 
 
