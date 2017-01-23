@@ -51,6 +51,12 @@ var lightmapSource = new Atomic.UIMenuItemSource();
 lightmapSource.addItem(new Atomic.UIMenuItem("Lightmap", "Lightmap"));
 lightmapSource.addItem(new Atomic.UIMenuItem("Lightmap Alpha", "Lightmap Alpha"));
 
+var terrainSource = new Atomic.UIMenuItemSource();
+terrainSource.addItem(new Atomic.UIMenuItem("TerrainBlend", "TerrainBlend"));
+terrainSource.addItem(new Atomic.UIMenuItem("8 Texture Blend", "8 Texture Blend"));
+terrainSource.addItem(new Atomic.UIMenuItem("8 Texture Triplanar", "8 Texture Triplanar"));
+terrainSource.addItem(new Atomic.UIMenuItem("8 Triplanar Array", "8 Triplanar Array"));
+
 var projectSource = new Atomic.UIMenuItemSource();
 var _ = new Atomic.UIMenuItem();
 
@@ -66,7 +72,11 @@ var techniqueLookup = {
     "Techniques/DiffAdd.xml": "Additive",
     "Techniques/NoTexture.xml": "No Texture",
     "Techniques/DiffLightMap.xml": "Lightmap",
-    "Techniques/DiffLightMapAlpha.xml": "Lightmap Alpha"
+    "Techniques/DiffLightMapAlpha.xml": "Lightmap Alpha",
+    "Techniques/TerrainBlend.xml": "TerrainBlend",
+    "Techniques/TerrainBlend8Edit.xml": "8 Texture Blend",
+    "Techniques/TerrainBlend8EditTriplanar.xml": "8 Texture Triplanar",
+    "Techniques/TerrainBlend8EditTriplanararray.xml": "8 Triplanar Array"
 };
 
 var techniqueReverseLookup = {};
@@ -344,7 +354,8 @@ class MaterialInspector extends ScriptWidget {
         section.contentRoot.addChild(attrsVerticalLayout);
 
         // TODO: Filter on technique
-        var textureUnits = [Atomic.TextureUnit.TU_DIFFUSE, Atomic.TextureUnit.TU_NORMAL, Atomic.TextureUnit.TU_SPECULAR, Atomic.TextureUnit.TU_EMISSIVE];
+        var textureUnits = [0,1,2,3,,4,5,6,7];
+        //[Atomic.TextureUnit.TU_DIFFUSE, Atomic.TextureUnit.TU_NORMAL, Atomic.TextureUnit.TU_SPECULAR, Atomic.TextureUnit.TU_EMISSIVE];
 
         for (var i in textureUnits) {
 
@@ -486,6 +497,9 @@ class MaterialInspector extends ScriptWidget {
         _.subSource = lightmapSource;
         techniqueSource.addItem(_);
 
+        _ = new Atomic.UIMenuItem("Terrain");
+        _.subSource = terrainSource;
+        techniqueSource.addItem(_);
         var projectTechniquesPath = ToolCore.toolSystem.project.getResourcePath() + "Techniques";
 
         if (Atomic.fileSystem.dirExists(projectTechniquesPath)) {
