@@ -221,7 +221,7 @@ namespace AtomicEditor
 				     colorMap_->SetSourceColorMap(weightTexture_);
 				      //ENABLE THIS TO TEST GRASS
 					  // DrawGrass(terrain_);
-					  // lastTerrain_ = terrain_;
+					   lastTerrain_ = terrain_;
 				   }
 
 				   cursorPosition_ = r.position_;
@@ -380,6 +380,7 @@ namespace AtomicEditor
 			float smoothpower = brushPower_ * 2;
 			float radius = brushSize_ / terrain_->GetSpacing().x_;
 			float layer = 2;
+			float paintpower = brushPower_ * 10;
 
 			if (!flattenHeight_)
 				flattenHeight_ = cursorPosition_.y_ / max;
@@ -397,7 +398,7 @@ namespace AtomicEditor
 				ApplyHeightBrush(terrain_, heightmap, nullptr, cursorPosition_.x_, cursorPosition_.z_, radius, flattenHeight_, smoothpower, brushHardness_, false, dt);
 			}
 			else if (mode_ == TerrainEditMode::PAINT) {
-				ApplyBlendBrush(terrain_, heightmap, colorMap_, nullptr, cursorPosition_.x_, cursorPosition_.z_, radius, max, invert * brushPower_, brushHardness_, paintLayer_, false, dt);
+				ApplyBlendBrush(terrain_, heightmap, colorMap_, nullptr, cursorPosition_.x_, cursorPosition_.z_, radius, max, paintpower, brushHardness_, paintLayer_, false, dt);
 			}
 
 			if (mode_ != TerrainEditMode::PAINT) {
@@ -616,11 +617,25 @@ namespace AtomicEditor
 	}
 
 
+	Vector2 TerrainEditor::CustomWorldToNormalized(Image *height, Terrain *terrain, Vector3 world)
+	{
+		if (!terrain || !height) return Vector2(0, 0);
+		Vector3 spacing = terrain->GetSpacing();
+		int patchSize = terrain->GetPatchSize();
+		IntVector2 numPatches = IntVector2((height->GetWidth() - 1) / patchSize, (height->GetHeight() - 1) / patchSize);
+		Vector2 patchWorldSize = Vector2(spacing.x_*(float)(patchSize*numPatches.x_), spacing.z_*(float)(patchSize*numPatches.y_));
+		Vector2 patchWorldOrigin = Vector2(-0.5f * patchWorldSize.x_, -0.5f * patchWorldSize.y_);
+		return Vector2((world.x_ - patchWorldOrigin.x_) / patchWorldSize.x_, (world.z_ - patchWorldOrigin.y_) / patchWorldSize.y_);
+	}
+
 	void TerrainEditor::ApplyBlendBrush(Terrain *terrain, Image *height, ColorMap *blend, Image *mask, float x, float z, float radius, float mx, float power, float hardness, int layer, bool usemask, float dt)
 	{
 		if (!blend || !height || !terrain) return;
 
-		Vector2 normalized = WorldToNormalized(height, terrain, Vector3(x, 0, z));
+		Quaternion rot = terrain->GetNode()->GetRotation();
+		Vector3 pos = Vector3(x, 0, z);
+		Vector3 rotatedpos = rot.Inverse() * pos;
+		Vector2 normalized = CustomWorldToNormalized(height, terrain, rotatedpos);
 		float ratio = ((float)blend->GetWidth() / (float)height->GetWidth());
 		int ix = (normalized.x_*(float)(blend->GetWidth() - 1));
 		int iy = (normalized.y_*(float)(blend->GetHeight() - 1));
