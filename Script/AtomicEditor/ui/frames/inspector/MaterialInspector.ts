@@ -38,6 +38,15 @@ solidSource.addItem(new Atomic.UIMenuItem("Diffuse Normal Specular", "Diffuse No
 solidSource.addItem(new Atomic.UIMenuItem("Diffuse Unlit", "Diffuse Unlit"));
 solidSource.addItem(new Atomic.UIMenuItem("No Texture", "No Texture"));
 
+var pbrSource = new Atomic.UIMenuItemSource();
+pbrSource.addItem(new Atomic.UIMenuItem("Diffuse", "Diffuse"));
+pbrSource.addItem(new Atomic.UIMenuItem("Diffuse Emissive", "Diffuse Emissive"));
+solidSource.addItem(new Atomic.UIMenuItem("Diffuse Normal", "Diffuse Normal"));
+solidSource.addItem(new Atomic.UIMenuItem("Diffuse Specular", "Diffuse Specular"));
+solidSource.addItem(new Atomic.UIMenuItem("Diffuse Normal Specular", "Diffuse Normal Specular"));
+solidSource.addItem(new Atomic.UIMenuItem("Diffuse Unlit", "Diffuse Unlit"));
+solidSource.addItem(new Atomic.UIMenuItem("No Texture", "No Texture"));
+
 var tranSource = new Atomic.UIMenuItemSource();
 tranSource.addItem(new Atomic.UIMenuItem("Alpha", "Alpha"));
 tranSource.addItem(new Atomic.UIMenuItem("Alpha Mask", "Alpha Mask"));
@@ -56,6 +65,7 @@ terrainSource.addItem(new Atomic.UIMenuItem("TerrainBlend", "TerrainBlend"));
 terrainSource.addItem(new Atomic.UIMenuItem("8 Texture Blend", "8 Texture Blend"));
 terrainSource.addItem(new Atomic.UIMenuItem("8 Texture Triplanar", "8 Texture Triplanar"));
 terrainSource.addItem(new Atomic.UIMenuItem("8 Triplanar Array", "8 Triplanar Array"));
+terrainSource.addItem(new Atomic.UIMenuItem("Terrain PBR", "Terrain PBR"));
 
 var projectSource = new Atomic.UIMenuItemSource();
 var _ = new Atomic.UIMenuItem();
@@ -76,7 +86,8 @@ var techniqueLookup = {
     "Techniques/TerrainBlend.xml": "TerrainBlend",
     "Techniques/TerrainBlend8Edit.xml": "8 Texture Blend",
     "Techniques/TerrainBlend8EditTriplanar.xml": "8 Texture Triplanar",
-    "Techniques/TerrainBlend8EditTriplanararray.xml": "8 Triplanar Array"
+    "Techniques/TerrainBlend8EditTriplanararray.xml": "8 Triplanar Array",
+    "Techniques/PBR/TerrainPBR.xml": "Terrain PBR"
 };
 
 var techniqueReverseLookup = {};
@@ -354,7 +365,7 @@ class MaterialInspector extends ScriptWidget {
         section.contentRoot.addChild(attrsVerticalLayout);
 
         // TODO: Filter on technique
-        var textureUnits = [0,1,2,3,,4,5,6,7];
+        var textureUnits = [0,1,2,3,4,5,6,7];
         //[Atomic.TextureUnit.TU_DIFFUSE, Atomic.TextureUnit.TU_NORMAL, Atomic.TextureUnit.TU_SPECULAR, Atomic.TextureUnit.TU_EMISSIVE];
 
         for (var i in textureUnits) {

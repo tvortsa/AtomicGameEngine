@@ -1,5 +1,5 @@
 <material>
-    <technique name="Techniques/TerrainEdit8.xml" />
+    <technique name="Techniques/TerrainEdit8Smooth.xml" />
 	<texture unit="0" name="" />
 	<texture unit="1" name="" />
 	<texture unit="2" name="Textures/diff.xml" />

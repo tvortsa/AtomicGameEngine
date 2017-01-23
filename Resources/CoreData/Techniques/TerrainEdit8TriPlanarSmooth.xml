@@ -1,4 +1,4 @@
-<technique vs="TerrainBlend8EditDetailTriplanar" ps="TerrainBlend8EditDetailTriplanar">
+<technique vs="TerrainEdit8" ps="TerrainEdit8" psdefines="TRIPLANAR SMOOTHBLEND">
     <pass name="base" />
     <pass name="litbase" vsdefines="BUMPMAP USEMASKTEXTURE" psdefines="AMBIENT BUMPMAP USEMASKTEXTURE" />
     <pass name="light" depthtest="equal" vsdefines="BUMPMAP" psdefines="BUMPMAP" depthwrite="false" blend="add" />

@@ -81,11 +81,11 @@ void VS()
 
         #ifdef SPOTLIGHT
             // Spotlight projection: transform from world space to projector texture coordinates
-            vSpotPos = projWorldPos * cLightMatrices[0];
+            vSpotPos = cLightMatrices[0] * projWorldPos;
         #endif
     
         #ifdef POINTLIGHT
-            vCubeMaskVec = (worldPos - cLightPos.xyz) * mat3(cLightMatrices[0][0].xyz, cLightMatrices[0][1].xyz, cLightMatrices[0][2].xyz);
+            vCubeMaskVec = mat3(cLightMatrices[0][0].xyz, cLightMatrices[0][1].xyz, cLightMatrices[0][2].xyz) * (worldPos - cLightPos.xyz);
         #endif
     #else
         // Ambient & per-vertex lighting
@@ -93,7 +93,7 @@ void VS()
             // If using lightmap, disregard zone ambient light
             // If using AO, calculate ambient in the PS
             vVertexLight = vec3(0.0, 0.0, 0.0);
-            vTexCoord2 = iTexCoord1;
+            vTexCoord2 = iTexCoord2;
         #else
             vVertexLight = GetAmbient(GetZonePos(worldPos));
         #endif
@@ -246,7 +246,7 @@ void PS()
         #endif
 
         #ifdef AMBIENT
-            finalColor += cAmbientColor.rgb * diffColor.rgb;
+            finalColor += cAmbientColor * diffColor.rgb;
             finalColor += cMatEmissiveColor;
             gl_FragColor = vec4(GetFog(finalColor, fogFactor), diffColor.a);
         #else
