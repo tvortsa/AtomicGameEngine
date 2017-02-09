@@ -58,7 +58,7 @@ class MainToolbar extends Atomic.UIWidget {
 
         this.subscribeToEvent(Editor.GizmoAxisModeChangedEvent((ev) => this.handleGizmoAxisModeChanged(ev)));
         this.subscribeToEvent(Editor.GizmoEditModeChangedEvent((ev) => this.handleGizmoEditModeChanged(ev)));
-        this.subscribeToEvent(EditorEvents.SceneClosed, (data) => this.handleSceneClosed(data));
+        this.subscribeToEvent(Editor.EditorSceneClosedEvent((data) => this.handleSceneClosed(data)));
         this.subscribeToEvent(this, Atomic.UIWidgetEvent((data) => this.handleWidgetEvent(data)));
 
         this.subscribeToEvent(Editor.EditorPlayerStartedEvent(() => {
@@ -171,7 +171,7 @@ class MainToolbar extends Atomic.UIWidget {
 
     }
 
-    handleSceneClosed(ev: EditorEvents.SceneClosedEvent) {
+    handleSceneClosed(ev: Editor.EditorSceneClosedEvent) {
         this.sendEvent("GizmoEditModeChanged", { mode: 0 });
     }
 

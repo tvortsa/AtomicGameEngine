@@ -59,7 +59,7 @@ class MainFrame extends ScriptWidget {
         this.terrainToolbar = new TerrainToolbar(this.getWidget("modaltoolbarcontainer"), this.getWidget("modalpropertiescontainer"));
 
         this.terrainToolbar.disable();
-        this.terrainToolbar.setVisibility(Atomic.UI_WIDGET_VISIBILITY_GONE);
+        this.terrainToolbar.setVisibility(Atomic.UI_WIDGET_VISIBILITY.UI_WIDGET_VISIBILITY_GONE);
         this.menu = new MainFrameMenu();
 
         this.disableProjectMenus();
@@ -188,12 +188,12 @@ class MainFrame extends ScriptWidget {
 
     showTerrainToolbar() {
         this.terrainToolbar.enable();
-        this.terrainToolbar.setVisibility(Atomic.UI_WIDGET_VISIBILITY_VISIBLE);
+        this.terrainToolbar.setVisibility(Atomic.UI_WIDGET_VISIBILITY.UI_WIDGET_VISIBILITY_VISIBLE);
     }
 
     hideTerrainToolbar() {
         this.terrainToolbar.disable();
-        this.terrainToolbar.setVisibility(Atomic.UI_WIDGET_VISIBILITY_GONE);
+        this.terrainToolbar.setVisibility(Atomic.UI_WIDGET_VISIBILITY.UI_WIDGET_VISIBILITY_GONE);
     }
 
     projectframe: ProjectFrame;

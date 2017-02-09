@@ -48,7 +48,7 @@ class TerrainToolbar extends Atomic.UIWidget {
         this.paintLayer  = <Atomic.UIInlineSelect>this.getWidget("paintlayer");
 
         this.subscribeToEvent(this, "WidgetEvent", (ev) => this.handleWidgetEvent(ev));
-        this.subscribeToEvent(EditorEvents.ActiveSceneEditorChange, (data) => this.handleActiveSceneEditorChanged(data));
+        this.subscribeToEvent(Editor.EditorActiveSceneEditorChangeEvent((data) => this.handleActiveSceneEditorChanged(data)));
         this.subscribeToEvent("TerrainEditModeChanged", (ev) => this.handleTerrainEditModeChanged(ev));
 
         this.raiseButton.setValue(1);
@@ -59,7 +59,7 @@ class TerrainToolbar extends Atomic.UIWidget {
 
     handleWidgetEvent(ev: Atomic.UIWidgetEvent): boolean {
 
-     if (ev.type == Atomic.UI_EVENT_TYPE_CHANGED && ev.target) {
+     if (ev.type == Atomic.UI_EVENT_TYPE.UI_EVENT_TYPE_CHANGED && ev.target) {
             if (ev.target.id == "brushpower") {
              this.terrainEditor.setBrushPower(this.brushPower.value / 10);
              return true;
@@ -132,7 +132,7 @@ class TerrainToolbar extends Atomic.UIWidget {
     }
 
 
-    handleActiveSceneEditorChanged(event: EditorEvents.ActiveSceneEditorChangeEvent) {
+    handleActiveSceneEditorChanged(event: Editor.EditorActiveSceneEditorChangeEvent) {
 
         if (!event.sceneEditor)
             return;
