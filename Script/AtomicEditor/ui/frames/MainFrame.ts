@@ -29,13 +29,10 @@ import MainToolbar = require("ui//MainToolbar");
 import AnimationToolbar = require("ui//AnimationToolbar");
 import TerrainToolbar = require("ui//TerrainToolbar");
 
-import UIEvents = require("ui/UIEvents");
-
 import ScriptWidget = require("ui/ScriptWidget");
 import MainFrameMenu = require("./menus/MainFrameMenu");
 
 import MenuItemSources = require("./menus/MenuItemSources");
-import * as EditorEvents from "../../editor/EditorEvents";
 
 class MainFrame extends ScriptWidget {
 
@@ -67,17 +64,17 @@ class MainFrame extends ScriptWidget {
 
         this.disableProjectMenus();
 
-        this.subscribeToEvent(UIEvents.ResourceEditorChanged, (data) => this.handleResourceEditorChanged(data));
+        this.subscribeToEvent(Editor.EditorResourceEditorChangedEvent((data) => this.handleResourceEditorChanged(data)));
 
-        this.subscribeToEvent("ProjectLoaded", (data) => {
+        this.subscribeToEvent(ToolCore.ProjectLoadedEvent((data) => {
             this.showWelcomeFrame(false);
             this.enableProjectMenus();
-        });
+        }));
 
-        this.subscribeToEvent(EditorEvents.ProjectUnloadedNotification, (data) => {
+        this.subscribeToEvent(Editor.ProjectUnloadedNotificationEvent((data) => {
             this.showWelcomeFrame(true);
             this.disableProjectMenus();
-        });
+        }));
 
         this.showWelcomeFrame(true);
 
@@ -163,9 +160,9 @@ class MainFrame extends ScriptWidget {
 
     }
 
-    handleResourceEditorChanged(data): void {
+    handleResourceEditorChanged(data: Editor.EditorResourceEditorChangedEvent): void {
 
-        var editor = <Editor.ResourceEditor> data.editor;
+        var editor = data.resourceEditor;
 
         if (editor) {
 

@@ -29,10 +29,11 @@
 #include <Atomic/Graphics/DebugRenderer.h>
 #include <Atomic/Graphics/Viewport.h>
 #include <Atomic/Graphics/Octree.h>
+#include <Atomic/Graphics/RenderPath.h>
 
 #include <Atomic/IO/FileSystem.h>
 #include <Atomic/Resource/ResourceCache.h>
-
+#include <Atomic/Resource/XMLFile.h>
 #include <Atomic/Physics/PhysicsWorld.h>
 
 #include <Atomic/Input/Input.h>
@@ -73,6 +74,35 @@ SceneEditor3D::SceneEditor3D(Context* context, const String &fullpath, UITabCont
     userPrefs_ = project->GetUserPrefs();
 
     ResourceCache* cache = GetSubsystem<ResourceCache>();
+
+	RenderPath *renderpath = new RenderPath();
+	renderpath->Load(cache->GetResource<XMLFile>("RenderPaths/PBRDeferredHWDepth.xml"));
+
+	Renderer *renderer = GetSubsystem<Renderer>();
+	renderer->SetHDRRendering(true);
+	renderer->SetMaterialQuality(3);
+	renderer->SetDrawShadows(true);
+	////renderer.SetDynamicInstancing(true);
+	////renderer.SetCullMode(CullMode.CULL_CCW, camera);
+	////renderer.SetShadowQuality(ShadowQuality.SHADOWQUALITY_BLUR_VSM);
+	////renderer.SetShadowSoftness(0.9f);
+	renderer->SetDefaultRenderPath(renderpath);
+
+
+	renderpath->Append(cache->GetResource<XMLFile>("PostProcess/BloomHDR.xml"));
+	// Make the bloom mixing parameter more pronounced
+	renderpath->SetShaderParameter("BloomMix", new Vector2(0.9f, 0.6f));
+	renderpath->SetEnabled("BloomHDR", true);
+
+	//renderpath->Append(cache->GetResource<XMLFile>("PostProcess/ChromaticAbberation.xml"));
+	//renderpath->SetEnabled("ChromaticAbberation", true);
+
+	//renderpath->Append(cache->GetResource<XMLFile>("PostProcess/FXAA2.xml"));
+	//renderpath->SetEnabled("FXAA2", true);
+
+	//renderpath.Append(cache.Get<XMLFile>("PostProcess/SSAOforum.xml"));
+	//renderpath.SetEnabled("SSAOforum", true);
+
 
     scene_ = new Scene(context_);
     SharedPtr<File> xmlFile = cache->GetFile(fullpath);

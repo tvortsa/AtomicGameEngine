@@ -9,6 +9,11 @@ vec3 GetLitFog(vec3 color, float fogFactor)
     return color * fogFactor;
 }
 
+vec3 GetExpFog(vec3 color, vec3 originalColor, float fogFactor)
+{
+    return (1-fogFactor) * originalColor + fogFactor * color;
+}
+
 float GetFogFactor(float depth)
 {
     return clamp((cFogParams.x - depth) * cFogParams.y, 0.0, 1.0);

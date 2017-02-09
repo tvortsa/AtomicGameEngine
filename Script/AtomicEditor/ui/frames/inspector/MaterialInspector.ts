@@ -21,9 +21,7 @@
 //
 
 import ScriptWidget = require("ui/ScriptWidget");
-import UIEvents = require("ui/UIEvents");
 import EditorUI = require("ui/EditorUI");
-import EditorEvents = require("editor/EditorEvents");
 
 import TextureSelector = require("./TextureSelector");
 
@@ -113,7 +111,7 @@ class MaterialInspector extends ScriptWidget {
         this.fd.id = "Vera";
         this.fd.size = 11;
 
-        this.subscribeToEvent("ResourceAdded", (ev: ToolCore.ResourceAddedEvent) => this.refreshTechniquesPopup());
+        this.subscribeToEvent(ToolCore.ResourceAddedEvent((ev: ToolCore.ResourceAddedEvent) => this.refreshTechniquesPopup()));
     }
 
     createShaderParametersSection(): Atomic.UISection {
@@ -157,7 +155,7 @@ class MaterialInspector extends ScriptWidget {
             field.id = params[i].name;
             field.text = params[i].valueString;
 
-            field.subscribeToEvent(field, "WidgetEvent", function (ev: Atomic.UIWidgetEvent) {
+            field.subscribeToEvent(field, Atomic.UIWidgetEvent(function (ev: Atomic.UIWidgetEvent) {
 
                 if (ev.type == Atomic.UI_EVENT_TYPE.UI_EVENT_TYPE_CHANGED) {
 
@@ -166,7 +164,7 @@ class MaterialInspector extends ScriptWidget {
 
                 }
 
-            }.bind(this));
+            }.bind(this)));
 
             attrLayout.addChild(field);
 
@@ -251,7 +249,7 @@ class MaterialInspector extends ScriptWidget {
             menu.fontDescription = this.fd;
             menu.show(techniqueSource);
 
-            button.subscribeToEvent(button, "WidgetEvent", function (ev: Atomic.UIWidgetEvent) {
+            button.subscribeToEvent(button, Atomic.UIWidgetEvent(function (ev: Atomic.UIWidgetEvent) {
 
                 if (ev.type != Atomic.UI_EVENT_TYPE.UI_EVENT_TYPE_CLICK)
                     return;
@@ -262,7 +260,7 @@ class MaterialInspector extends ScriptWidget {
 
                 }
 
-            }.bind(this));
+            }.bind(this)));
 
         }.bind(this);
 
@@ -296,7 +294,7 @@ class MaterialInspector extends ScriptWidget {
                 this.createTextureRemoveButtonCallback(this.tunit, this.textureWidget);
                 return;
             }
-            
+
             var texture = <Atomic.Texture2D>Atomic.cache.getResource("Texture2D", asset.path);
 
             if (texture) {
@@ -316,7 +314,7 @@ class MaterialInspector extends ScriptWidget {
             var texture = this.material.getTexture(textureUnit);
 
             if (textureWidget.getTexture() != null) {
-                this.sendEvent(EditorEvents.InspectorProjectReference, { "path": texture.getName() });
+                this.sendEvent(Editor.InspectorProjectReferenceEventData({ "path": texture.getName() }));
             } else {
                 this.openTextureSelectionBox(textureUnit, textureWidget);
             }
@@ -416,7 +414,7 @@ class MaterialInspector extends ScriptWidget {
             attrsVerticalLayout.addChild(attrLayout);
 
             // handle dropping of texture on widget
-            textureButton.subscribeToEvent(textureButton, "DragEnded", (ev: Atomic.DragEndedEvent) => {
+            textureButton.subscribeToEvent(textureButton, Atomic.DragEndedEvent((ev: Atomic.DragEndedEvent) => {
 
                 var importer = this.acceptAssetDrag("TextureImporter", ev);
 
@@ -432,10 +430,11 @@ class MaterialInspector extends ScriptWidget {
                         this.material.setTexture(ev.target["tunit"], texture);
                         (<Atomic.UITextureWidget>ev.target["textureWidget"]).texture = this.getTextureThumbnail(texture);
 
-                        this.sendEvent("InspectorProjectReference", { "path": texture.getName(), "ButtonID": texture.getName() });
+                        // note, ButtonID has been commented out because it doesn't appear to be used anywhere
+                        this.sendEvent(Editor.InspectorProjectReferenceEventData({ "path": texture.getName() /* "ButtonID": texture.getName() */ }));
                     }
                 }
-            });
+            }));
 
         }
 

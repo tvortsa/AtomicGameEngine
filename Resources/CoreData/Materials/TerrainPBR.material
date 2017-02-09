@@ -2,16 +2,14 @@
 <material>
 	<technique name="Techniques/PBR/TerrainPBR.xml" quality="0" loddistance="0" />
     <texture unit="0" name="Textures/TerrainWeights.dds" />
-    <texture unit="1" name="Textures/TerrainDetail1.dds" />
-    <texture unit="2" name="Textures/TerrainDetail2.dds" />
-    <texture unit="3" name="Textures/TerrainDetail3.dds" />
-	<parameter name="UOffset" value="1 0 0 0" />
-	<parameter name="VOffset" value="0 1 0 0" />
-	<parameter name="DetailTiling" value="128 128" />
-	<parameter name="MatDiffColor" value="1 1 1 1" />
-	<parameter name="MatEmissiveColor" value="0 0 0" />
-	<parameter name="MatEnvMapColor" value="1 1 1" />
-	<parameter name="MatSpecColor" value="1 1 1 1" />
+    <texture unit="1" name="" />
+	<texture unit="2" name="Textures/diff.xml" />
+    <texture unit="3" name="Textures/normal.xml" />
+    <parameter name="DetailTiling" value="4 4 4" />
+	<parameter name="PackTexFactors" value="1 1 1 1" />
+	<parameter name="BumpStrength" value="128" />
+	<parameter name="LayerScaling1" value="1 1 1 1" />
+	<parameter name="LayerScaling2" value="1 1 1 0.125" />
 	<parameter name="Roughness" value="1" />
 	<parameter name="Metallic" value="0" />
 	<cull value="ccw" />
