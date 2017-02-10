@@ -72,7 +72,7 @@ namespace AtomicEditor
     {
 		framerateTimer_ = 0;
         sceneEditor3D_ = sceneEditor;
-        scene_ = sceneEditor3D_->GetScene();
+       // scene_ = sceneEditor3D_->GetScene();
 		sceneview3d_ = sceneEditor3D_->GetSceneView3D();
 		hitpos_ = Vector3::ZERO;
         spacing_ = Vector3::ONE;
@@ -100,68 +100,7 @@ namespace AtomicEditor
 
     }
 
-	void TerrainEditor::DrawGrass(Terrain* terrain) {
-		// load nodes or create replication mesh
-		bool loadNodes = false;
-		const unsigned NUM_OBJECTS = 10000;
-		ResourceCache* cache = GetSubsystem<ResourceCache>();
 
-		for (unsigned i = 0; i < NUM_OBJECTS; ++i)
-		{
-			PRotScale qp;
-			qp.pos = Vector3(Random(180.0f) - 90.0f, 0.0f, Random(180.0f) - 90.0f);
-			qp.pos.y_ = terrain->GetHeight(qp.pos);
-			qp.rot = Quaternion(0.0f, Random(360.0f), 0.0f);
-			qp.scale = 0.5f + Random(2.0f);
-			qpList_.Push(qp);
-
-			if (loadNodes)
-			{
-				Node* mushroomNode = scene_->CreateChild("Vegbrush");
-				mushroomNode->SetPosition(qp.pos);
-				mushroomNode->SetRotation(qp.rot);
-				mushroomNode->SetScale(qp.scale);
-				StaticModel* mushroomObject = mushroomNode->CreateComponent<StaticModel>();
-				mushroomObject->SetModel(cache->GetResource<Model>("Models/Veg/vegbrush.mdl"));
-				mushroomObject->SetMaterial(cache->GetResource<Material>("Models/Veg/veg-alphamask.xml"));
-			}
-		}
-
-		if (!loadNodes)
-		{
-			Model *pModel = cache->GetResource<Model>("Models/Veg/vegbrush.mdl");
-			SharedPtr<Model> cloneModel = pModel->Clone();
-
-			nodeRep_ = scene_->CreateChild("Vegrep");
-			vegReplicator_ = nodeRep_->CreateComponent<GeomReplicator>();
-			vegReplicator_->SetModel(cloneModel);
-			vegReplicator_->SetMaterial(cache->GetResource<Material>("Models/Veg/veg-alphamask.xml"));
-
-			Vector3 lightDir(0.6f, -1.0f, 0.8f);
-			lightDir = -1.0f * lightDir.Normalized();
-			vegReplicator_->Replicate(qpList_, lightDir);
-
-			// specify which verts in the geom to move
-			// - for the vegbrush model, the top two vertex indeces are 2 and 3
-			PODVector<unsigned> topVerts;
-			topVerts.Push(2);
-			topVerts.Push(3);
-
-			// specify the number of geoms to update at a time
-			unsigned batchCount = 10000;
-
-			// wind velocity (breeze velocity shown)
-			Vector3 windVel(0.2f, -0.2f, 0.2f);
-
-			// specify the cycle timer
-			float cycleTimer = 0.4f;
-
-			vegReplicator_->ConfigWindVelocity(topVerts, batchCount, windVel, cycleTimer);
-			vegReplicator_->WindAnimationEnabled(true);
-		//	vegReplicator_->ShowGeomVertIndeces(true);
-		}
-
-	}
 
 
 	void TerrainEditor::HandleGizmoEditModeChanged(StringHash eventType, VariantMap& eventData)
@@ -219,8 +158,6 @@ namespace AtomicEditor
 				     weightTexture_ = (Texture2D*)terrainMaterial_->GetTexture(TU_DIFFUSE);
 					 colorMap_ = new ColorMap(context_);
 				     colorMap_->SetSourceColorMap(weightTexture_);
-				      //ENABLE THIS TO TEST GRASS
-					  // DrawGrass(terrain_);
 					   lastTerrain_ = terrain_;
 				   }
 

@@ -45,7 +45,9 @@ geometryCreateSource.addItem(new Atomic.UIMenuItem("AnimatedModel", "AnimatedMod
 geometryCreateSource.addItem(new Atomic.UIMenuItem("AnimationController", "AnimationController"));
 geometryCreateSource.addItem(new Atomic.UIMenuItem("BillboardSet", "BillboardSet"));
 geometryCreateSource.addItem(new Atomic.UIMenuItem("CustomGeometry", "CustomGeometry"));
+geometryCreateSource.addItem(new Atomic.UIMenuItem("FoliageSystem", "FoliageSystem"));
 geometryCreateSource.addItem(new Atomic.UIMenuItem("ParticleEmitter", "ParticleEmitter"));
+geometryCreateSource.addItem(new Atomic.UIMenuItem("ProcSky", "ProcSky"));
 geometryCreateSource.addItem(new Atomic.UIMenuItem("RibbonTrail", "RibbonTrail"));
 geometryCreateSource.addItem(new Atomic.UIMenuItem("Skybox", "SkyBox"));
 geometryCreateSource.addItem(new Atomic.UIMenuItem("StaticModelGroup", "StaticModelGroup"));

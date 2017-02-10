@@ -129,13 +129,6 @@ namespace AtomicEditor
 		void BuildCursorMesh(float radius, Vector3 spacing);
 		void FileSaveHandler(StringHash eventType, VariantMap& eventData);
 
-		//Grass stuff
-		PODVector<PRotScale> qpList_;
-		// replicator
-		SharedPtr<GeomReplicator> vegReplicator_;
-		WeakPtr<Node> nodeRep_;
-
-		void DrawGrass(Terrain* terrain);
 		SharedPtr<Terrain> lastTerrain_;
 		SharedPtr<Material> terrainMaterial_;
 		SharedPtr<Texture2D> weightTexture_;

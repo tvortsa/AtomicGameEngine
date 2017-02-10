@@ -25,6 +25,8 @@
 // THE SOFTWARE.
 //
 
+#pragma once
+
 #include <Atomic/Core/CoreEvents.h>
 #include <Atomic/Engine/Engine.h>
 #include <Atomic/Graphics/Camera.h>

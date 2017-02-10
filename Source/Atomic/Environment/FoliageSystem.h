@@ -20,23 +20,62 @@
 // THE SOFTWARE.
 //
 
-#include "Precompiled.h"
-#include "Environment.h"
-#include "TimeOfDay.h"
-#include "ProcSky.h"
-#include "GeomReplicator.h"
-#include "FoliageSystem.h"
+#pragma once
+
+#if defined(_WIN32) || defined(_WIN64)
+#define fmax max
+#define fmin min
+#endif
+
+#include "../Graphics/Drawable.h"
+#include "../Graphics/Texture2D.h"
+#include "../Graphics/IndexBuffer.h"
+#include "../Graphics/VertexBuffer.h"
+#include "../Graphics/Geometry.h"
+#include "../Graphics/Material.h"
+#include "../Graphics/Zone.h"
+#include "../Scene/Node.h"
+#include "../Graphics/Terrain.h"
+#include "../Environment/GeomReplicator.h"
 
 namespace Atomic
 {
 
-void RegisterEnvironmentLibrary(Context* context)
-{
-    ProcSky::RegisterObject(context);
-    TimeOfDay::RegisterObject(context);
-	GeomReplicator::RegisterObject(context);
-	FoliageSystem::RegisterObject(context);
+	class ATOMIC_API FoliageSystem : public  Component
+	{
+		ATOMIC_OBJECT(FoliageSystem, Component);
 
-}
+	public:
+		/// Construct.
+		///
+		FoliageSystem(Context* context);
+
+		/// Destruct.
+		virtual ~FoliageSystem();
+
+		/// Register object factory. Drawable must be registered first.
+		static void RegisterObject(Context* context);
+
+		void DrawGrass();
+
+	protected:
+
+		bool initialized_;
+		
+		void HandleSceneUpdate(StringHash eventType, VariantMap& eventData);
+	
+		void Initialize();
+		void OnNodeSet(Node* node);
+
+		//Grass stuff
+		PODVector<PRotScale> qpList_;
+		// replicator
+		SharedPtr<GeomReplicator> vegReplicator_;
+		WeakPtr<Node> nodeRep_;
+		SharedPtr<Terrain> terrain_;
+		SharedPtr<Node> node_;
+
+
+	};
 
 }
