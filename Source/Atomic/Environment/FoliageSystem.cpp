@@ -97,16 +97,18 @@ namespace Atomic
 	}
 
 	void FoliageSystem::DrawGrass() {
-		const unsigned NUM_OBJECTS = 10000;
+		const unsigned NUM_OBJECTS = 100000;
 		ResourceCache* cache = GetSubsystem<ResourceCache>();
-
+		Quaternion rot = node_->GetRotation();
+	//	Vector3 rotatedpos = (rot.Inverse() * qp.pos);  //  (rot.Inverse() * qp.pos) + terrainpos;
 		for (unsigned i = 0; i < NUM_OBJECTS; ++i)
 		{
 			PRotScale qp;
+			
 			qp.pos = Vector3(Random(180.0f) - 90.0f, 0.0f, Random(180.0f) - 90.0f);
-			qp.pos.y_ = terrain_->GetHeight(qp.pos);
 			qp.rot = Quaternion(0.0f, Random(360.0f), 0.0f);
-			qp.scale = 0.5f + Random(2.0f);
+			qp.pos.y_ = terrain_->GetHeight(rot * qp.pos) - 0.2f;
+			qp.scale = 2.5f + Random(2.0f);
 			qpList_.Push(qp);
 		}
 
@@ -114,6 +116,7 @@ namespace Atomic
 		SharedPtr<Model> cloneModel = pModel->Clone();
 
 		nodeRep_ = node_->CreateChild("Vegrep");
+		nodeRep_->SetTemporary(true);
 		vegReplicator_ = nodeRep_->CreateComponent<GeomReplicator>();
 		vegReplicator_->SetModel(cloneModel);
 		vegReplicator_->SetMaterial(cache->GetResource<Material>("Models/Veg/veg-alphamask.xml"));
