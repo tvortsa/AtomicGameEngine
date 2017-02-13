@@ -399,9 +399,10 @@ void GeomReplicator::HandleUpdate(StringHash eventType, VariantMap& eventData)
     RenderGeomVertIndeces();
 }
 
-void GeomReplicator::Destroy() 
+void GeomReplicator::Destroy()
 {
 	UnsubscribeFromAllEvents();
 	DoAutoRemove(AutoRemoveMode::REMOVE_COMPONENT);
 }
+
 }

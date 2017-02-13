@@ -61,8 +61,10 @@ namespace Atomic
 	protected:
 
 		bool initialized_;
-		void ApplyAttributes();
+		//void ApplyAttributes();
 		void HandleComponentRemoved(StringHash eventType, VariantMap& eventData);
+		void HandleDrawableUpdateFinished(StringHash eventType, VariantMap& eventData);
+		void OnNodeSet(Node* node);
 	
 		void Initialize();
 	//	void OnNodeSet(Node* node);

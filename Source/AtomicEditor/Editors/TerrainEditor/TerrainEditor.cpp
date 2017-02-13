@@ -73,7 +73,7 @@ namespace AtomicEditor
 		framerateTimer_ = 0;
 		terrainUpdated_ = false;
         sceneEditor3D_ = sceneEditor;
-       // scene_ = sceneEditor3D_->GetScene();
+        scene_ = sceneEditor3D_->GetScene();
 		sceneview3d_ = sceneEditor3D_->GetSceneView3D();
 		hitpos_ = Vector3::ZERO;
         spacing_ = Vector3::ONE;

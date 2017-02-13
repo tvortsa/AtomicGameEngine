@@ -103,6 +103,7 @@ public:
 
     virtual ~GeomReplicator()
     {
+		cycleTimer_ = 0;
     }
 
     unsigned Replicate(const PODVector<PRotScale> &qplist, const Vector3 &normalOverride=Vector3::ZERO);

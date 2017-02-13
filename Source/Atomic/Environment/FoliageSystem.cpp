@@ -33,6 +33,7 @@
 #include "../Graphics/Technique.h"
 #include "../Environment/FoliageSystem.h"
 #include "../Graphics/Renderer.h"
+#include <Atomic/IO/Log.h>
 
 #if defined(_MSC_VER)
 #include "stdint.h"
@@ -56,11 +57,10 @@ namespace Atomic
 	{
 	}
 
-	void FoliageSystem::ApplyAttributes()
-	{
-		if(!initialized_)
-		   Initialize();
-	}
+	//void FoliageSystem::ApplyAttributes()
+	//{
+	
+	//}
 
 
 
@@ -73,18 +73,18 @@ namespace Atomic
 
 	void FoliageSystem::HandleComponentRemoved(StringHash eventType, VariantMap& eventData)
 	{
-		if (vegReplicator_)
-	    	vegReplicator_->Destroy();
+		Component* component = static_cast<Component*> (eventData[Atomic::ComponentRemoved::P_COMPONENT].GetPtr());
+		if (component == this) {
+			vegReplicator_->Destroy();
+		}
+
 	}
 
 
 	void FoliageSystem::Initialize()
 	{
 		initialized_ = true;
-		node_ = this->GetNode();
-
 		SubscribeToEvent(node_->GetScene(), E_COMPONENTREMOVED, ATOMIC_HANDLER(FoliageSystem, HandleComponentRemoved));
-		terrain_ = node_->GetComponent<Terrain>();
 		DrawGrass();
 	}
 
@@ -97,19 +97,44 @@ namespace Atomic
 	}
 
 
-	//void FoliageSystem::OnNodeSet(Node* node)
-	//{
 
-	//	if (node && node->GetScene())
-	//	{
-	//		node_ = node;
-	//		SubscribeToEvent(node->GetScene(), E_SCENEUPDATE, ATOMIC_HANDLER(FoliageSystem, HandleSceneUpdate));
-	//	}
+	void FoliageSystem::OnNodeSet(Node* node)
+	{
+		if (node && !initialized_)
+		{
+			node_ = node;
+			node->AddListener(this);
 
-	//}
+			PODVector<Terrain*> terrains;
+			node->GetDerivedComponents<Terrain>(terrains);
+
+			if (terrains.Size() > 0)
+			{
+				terrain_ = terrains[0];
+				SubscribeToEvent(node->GetScene(), E_SCENEDRAWABLEUPDATEFINISHED, ATOMIC_HANDLER(FoliageSystem, HandleDrawableUpdateFinished));
+				// TODO: Make this better
+				// If we try to get height of the terrain right away it will be zero because it's not finished loading. So I wait until the scene has finished
+				// updating all its drawables (for want of a better event) and then initialize the grass if it isn't already initialized.
+			}
+		}
+	}
+	void FoliageSystem::HandleDrawableUpdateFinished(StringHash eventType, VariantMap& eventData)
+	{
+		if (!initialized_)
+			Initialize();
+		this->UnsubscribeFromEvent(E_SCENEDRAWABLEUPDATEFINISHED);
+		
+	}
 
 	void FoliageSystem::DrawGrass() {
 		const unsigned NUM_OBJECTS = 20000;
+		//terrain_ = node_->GetComponent<Terrain>();
+
+		if (!terrain_){
+			ATOMIC_LOGERROR("Foliage system couldn't find terrain");
+			return;
+		}
+
 		ResourceCache* cache = GetSubsystem<ResourceCache>();
 		Quaternion rot = node_->GetRotation();
 	//	Vector3 rotatedpos = (rot.Inverse() * qp.pos);  //  (rot.Inverse() * qp.pos) + terrainpos;
