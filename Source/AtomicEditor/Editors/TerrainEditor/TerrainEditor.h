@@ -133,6 +133,8 @@ namespace AtomicEditor
 		SharedPtr<Material> terrainMaterial_;
 		SharedPtr<Texture2D> weightTexture_;
 
+		bool terrainUpdated_;
+
 		Vector2 CustomWorldToNormalized(Image *height, Terrain *terrain, Vector3 world);
 	};
 

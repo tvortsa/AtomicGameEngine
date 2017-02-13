@@ -71,6 +71,7 @@ namespace AtomicEditor
     TerrainEditor::TerrainEditor(Context* context, SceneEditor3D *sceneEditor) : Object(context), hasCopied_(false)
     {
 		framerateTimer_ = 0;
+		terrainUpdated_ = false;
         sceneEditor3D_ = sceneEditor;
        // scene_ = sceneEditor3D_->GetScene();
 		sceneview3d_ = sceneEditor3D_->GetSceneView3D();
@@ -345,6 +346,7 @@ namespace AtomicEditor
 				colorMap_->ApplyColorMap();
 			}
             
+			terrainUpdated_ = true;
 			sceneEditor3D_->GetScene()->SendEvent(E_SCENEEDITSCENEMODIFIED);
         }
 		else {
@@ -522,10 +524,13 @@ namespace AtomicEditor
 
 	void TerrainEditor::FileSaveHandler(StringHash eventType, VariantMap& eventData)
 	{
+		if (!terrainUpdated_)
+			return;
 
 		using namespace FileChanged;
 		const String& fileName = eventData[P_FILENAME].GetString();
         
+
 		if (fileName == scene_->GetFileName() && terrain_)
 		{
 			Image* heightmap = terrain_->GetHeightMap();
@@ -538,6 +543,7 @@ namespace AtomicEditor
 			String blendmapName = weightTexture_->GetName();
 			String blendmapFile = cache->GetResourceFileName(blendmapName);
 			colorMap_->SavePNG(blendmapFile);
+			terrainUpdated_ = false;
 
 		}
 	}

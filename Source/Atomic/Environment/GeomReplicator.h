@@ -110,6 +110,7 @@ public:
                             const Vector3 &velocity, float cycleTimer);
     void WindAnimationEnabled(bool enable);
     void ShowGeomVertIndeces(bool show);
+	void Destroy();
 
 protected:
     unsigned ReplicateIndeces(IndexBuffer *idxbuffer, unsigned numVertices, unsigned expandSize);

@@ -57,6 +57,7 @@
 
 namespace Atomic
 {
+
 //=============================================================================
 //=============================================================================
 unsigned GeomReplicator::Replicate(const PODVector<PRotScale> &qplist, const Vector3 &normalOverride)
@@ -167,6 +168,8 @@ unsigned GeomReplicator::Replicate(const PODVector<PRotScale> &qplist, const Vec
 
     return qplist.Size();
 }
+
+
 
 unsigned GeomReplicator::ReplicateIndeces(IndexBuffer *idxbuffer, unsigned numVertices, unsigned expandSize)
 {
@@ -394,5 +397,11 @@ void GeomReplicator::HandleUpdate(StringHash eventType, VariantMap& eventData)
     }
 
     RenderGeomVertIndeces();
+}
+
+void GeomReplicator::Destroy() 
+{
+	UnsubscribeFromAllEvents();
+	DoAutoRemove(AutoRemoveMode::REMOVE_COMPONENT);
 }
 }

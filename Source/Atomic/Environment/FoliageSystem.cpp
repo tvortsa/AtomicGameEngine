@@ -49,13 +49,17 @@ namespace Atomic
 
 	FoliageSystem::FoliageSystem(Context *context) : Component(context)
 	{
-
-
+		initialized_ = false;
 	}
 
 	FoliageSystem::~FoliageSystem()
 	{
+	}
 
+	void FoliageSystem::ApplyAttributes()
+	{
+		if(!initialized_)
+		   Initialize();
 	}
 
 
@@ -63,41 +67,49 @@ namespace Atomic
 	void FoliageSystem::RegisterObject(Context* context)
 	{
 		context->RegisterFactory<FoliageSystem>(GEOMETRY_CATEGORY);
-
 		ATOMIC_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
 	}
 
 
-	void FoliageSystem::HandleSceneUpdate(StringHash eventType, VariantMap& eventData)
+	void FoliageSystem::HandleComponentRemoved(StringHash eventType, VariantMap& eventData)
 	{
-
-
-
+		if (vegReplicator_)
+	    	vegReplicator_->Destroy();
 	}
 
 
 	void FoliageSystem::Initialize()
 	{
 		initialized_ = true;
+		node_ = this->GetNode();
 
+		SubscribeToEvent(node_->GetScene(), E_COMPONENTREMOVED, ATOMIC_HANDLER(FoliageSystem, HandleComponentRemoved));
+		terrain_ = node_->GetComponent<Terrain>();
+		DrawGrass();
 	}
 
-	void FoliageSystem::OnNodeSet(Node* node)
+	void FoliageSystem::OnSetEnabled()
 	{
+		bool enabled = IsEnabledEffective();
 
-		if (node && node->GetScene())
-		{
-			SubscribeToEvent(node->GetScene(), E_SCENEUPDATE, ATOMIC_HANDLER(FoliageSystem, HandleSceneUpdate));
-			node_ = node;
-			terrain_ = node->GetComponent<Terrain>();
-			DrawGrass();
-			//SubscribeToEvent(E_BEGINVIEWUPDATE, ATOMIC_HANDLER(FoliageSystem, HandleBeginViewUpdate));
-		}
-
+		if(vegReplicator_)
+	    	vegReplicator_->SetEnabled(enabled);
 	}
+
+
+	//void FoliageSystem::OnNodeSet(Node* node)
+	//{
+
+	//	if (node && node->GetScene())
+	//	{
+	//		node_ = node;
+	//		SubscribeToEvent(node->GetScene(), E_SCENEUPDATE, ATOMIC_HANDLER(FoliageSystem, HandleSceneUpdate));
+	//	}
+
+	//}
 
 	void FoliageSystem::DrawGrass() {
-		const unsigned NUM_OBJECTS = 100000;
+		const unsigned NUM_OBJECTS = 20000;
 		ResourceCache* cache = GetSubsystem<ResourceCache>();
 		Quaternion rot = node_->GetRotation();
 	//	Vector3 rotatedpos = (rot.Inverse() * qp.pos);  //  (rot.Inverse() * qp.pos) + terrainpos;
@@ -115,9 +127,7 @@ namespace Atomic
 		Model *pModel = cache->GetResource<Model>("Models/Veg/vegbrush.mdl");
 		SharedPtr<Model> cloneModel = pModel->Clone();
 
-		nodeRep_ = node_->CreateChild("Vegrep");
-		nodeRep_->SetTemporary(true);
-		vegReplicator_ = nodeRep_->CreateComponent<GeomReplicator>();
+		vegReplicator_ = node_->CreateComponent<GeomReplicator>();
 		vegReplicator_->SetModel(cloneModel);
 		vegReplicator_->SetMaterial(cache->GetResource<Material>("Models/Veg/veg-alphamask.xml"));
 
@@ -135,10 +145,10 @@ namespace Atomic
 		unsigned batchCount = 10000;
 
 		// wind velocity (breeze velocity shown)
-		Vector3 windVel(0.2f, -0.2f, 0.2f);
+		Vector3 windVel(0.1f, -0.1f, 0.1f);
 
 		// specify the cycle timer
-		float cycleTimer = 0.4f;
+		float cycleTimer = 1.4f;
 
 		vegReplicator_->ConfigWindVelocity(topVerts, batchCount, windVel, cycleTimer);
 		vegReplicator_->WindAnimationEnabled(true);

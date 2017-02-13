@@ -61,12 +61,13 @@ namespace Atomic
 	protected:
 
 		bool initialized_;
-		
-		void HandleSceneUpdate(StringHash eventType, VariantMap& eventData);
+		void ApplyAttributes();
+		void HandleComponentRemoved(StringHash eventType, VariantMap& eventData);
 	
 		void Initialize();
-		void OnNodeSet(Node* node);
-
+	//	void OnNodeSet(Node* node);
+		/// Handle enabled/disabled state change.
+		virtual void OnSetEnabled();
 		//Grass stuff
 		PODVector<PRotScale> qpList_;
 		// replicator
