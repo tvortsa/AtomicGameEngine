@@ -194,7 +194,7 @@ namespace AtomicEditor
         {
             CustomGeometryVertex* vert = brushcursor_->GetVertex(0, v);
             float ht = terrain->GetHeight(Vector3(vert->position_.x_ + brushcursornode_->GetPosition().x_, 0, vert->position_.z_ + brushcursornode_->GetPosition().z_));
-            vert->position_.y_ = ht - cursorPosition_.y_ + 0.01;
+            vert->position_.y_ = ht - cursorPosition_.y_ + 0.00001;
         }
         brushcursor_->Commit();
     }
@@ -212,7 +212,7 @@ namespace AtomicEditor
         float originx = (-meshsize)*spacingx*0.5;
         float originz = (-meshsize)*spacingx*0.5;
 
-        float uvspacing = 1 / (meshsize - 1);
+        float uvspacing = 1 / (meshsize - 2);
 
         int x, z;
 
