@@ -1,3 +1,7 @@
+definitions
+	menubutton
+		lp: height: 30, width: 70
+		skin TBButton.uniformflat
 TBLayout: axis: y, distribution: gravity, spacing: 10
 	lb: min_width: 750
 	TBLayout: axis: x

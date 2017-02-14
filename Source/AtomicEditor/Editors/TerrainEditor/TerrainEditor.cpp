@@ -92,6 +92,8 @@ namespace AtomicEditor
 		brushcursornode_->SetPosition(Vector3(0, 0, 0));
         brushSize_ = 5.0f;
 
+		updateObjects_ = false;
+
 		SubscribeToEvent(E_GIZMOEDITMODECHANGED, ATOMIC_HANDLER(TerrainEditor, HandleGizmoEditModeChanged));
 		SubscribeToEvent(E_FILECHANGED, ATOMIC_HANDLER(TerrainEditor, FileSaveHandler));	
     }
@@ -345,13 +347,29 @@ namespace AtomicEditor
 			else {
 				colorMap_->ApplyColorMap();
 			}
-            
+			updateObjects_ = true;
 			terrainUpdated_ = true;
 			sceneEditor3D_->GetScene()->SendEvent(E_SCENEEDITSCENEMODIFIED);
         }
 		else {
 			flattenHeight_ = NULL;
 		}
+
+		//if (updateObjects_)
+		//{
+		//	updateObjects_ = false;
+		//	if (terrain_->GetNode()->HasComponent<GeomReplicator>())
+		//	{
+		//		PODVector<GeomReplicator*> replicators;
+		//		terrain_->GetNode()->GetComponents<GeomReplicator>(replicators);
+		//		for (unsigned i = 0; i < replicators.Size(); ++i)
+		//		{
+		//			replicators[i]->Update();
+		//		}
+
+		//	}
+		//}
+
 
 		// Code to change brush size using mousewheel. Don't really need it now that it's changed in the UI, but would be nice to have it. 
 		// Will need an event to keep the UI in sync though, so commenting it out for now

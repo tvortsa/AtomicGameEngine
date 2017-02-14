@@ -152,7 +152,8 @@ namespace Atomic
 		Model *pModel = cache->GetResource<Model>("Models/Veg/vegbrush.mdl");
 		SharedPtr<Model> cloneModel = pModel->Clone();
 
-		vegReplicator_ = node_->CreateComponent<GeomReplicator>();
+		if(!vegReplicator_)
+		   vegReplicator_ = node_->CreateComponent<GeomReplicator>();
 		vegReplicator_->SetModel(cloneModel);
 		vegReplicator_->SetMaterial(cache->GetResource<Material>("Models/Veg/veg-alphamask.xml"));
 

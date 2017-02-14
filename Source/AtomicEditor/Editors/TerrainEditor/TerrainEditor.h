@@ -134,7 +134,7 @@ namespace AtomicEditor
 		SharedPtr<Texture2D> weightTexture_;
 
 		bool terrainUpdated_;
-
+		bool updateObjects_;
 		Vector2 CustomWorldToNormalized(Image *height, Terrain *terrain, Vector3 world);
 	};
 

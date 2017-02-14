@@ -9,9 +9,9 @@
 #include "IBL.glsl"
 
 #ifndef GL_ES
-varying vec2 vDetailTexCoord;
+varying vec3 vDetailTexCoord;
 #else
-varying mediump vec2 vDetailTexCoord;
+varying mediump vec3 vDetailTexCoord;
 #endif
 
 #if defined(NORMALMAP) || defined(IBL)
@@ -67,57 +67,20 @@ varying vec4 vWorldPos;
 //##################################################################
 uniform sampler2D sWeightMap0;
 uniform sampler2D sWeightMap1;
-uniform sampler2D sDetailMap2;
+uniform sampler2DArray sDetailMap2;
 
 #ifdef NORMALMAP
-	uniform sampler2D sNormal3;
+	uniform sampler2DArray sNormal3;
 #endif
 
 #ifdef USEMASKTEXTURE
-uniform sampler2D sMask4;
+	uniform sampler2D sMask4;
 #endif
 
-uniform vec2 cDetailTiling;
-uniform vec4 cPackTexFactors;
+uniform vec3 cDetailTiling;
+uniform vec4 cLayerScaling1;
+uniform vec4 cLayerScaling2;
 
-#ifdef COMPILEPS
-float mipmapLevel(vec2 uv, float textureSize)
-{
-    vec2 dx = dFdx(uv * textureSize);
-    vec2 dy = dFdy(uv * textureSize);
-    float d = max(dot(dx, dx), dot(dy, dy));
-    return 0.5 * log2(d);
-}
-
-vec4 sampleTexturePackMipWrapped(sampler2D s, vec2 uv, vec2 tile, float lod)
-{
- 	/// estimate mipmap/LOD level
-	//float lod = mipmapLevel(uv, cPackTexFactors.z);
-	//lod = clamp(lod, 0.0, cPackTexFactors.w);
-
-	/// get width/height of the whole pack texture for the current lod level
-	float size = pow(2.0, cPackTexFactors.w - lod);
-	float sizex = size / cPackTexFactors.x; // width in pixels
-	float sizey = size / cPackTexFactors.y; // height in pixels
-
-	/// perform tiling
-	uv = fract(uv);
-
-	/// tweak pixels for correct bilinear filtering, and add offset for the wanted tile
-	uv.x = uv.x * ((sizex * cPackTexFactors.x - 1.0) / sizex) + 0.5 / sizex + cPackTexFactors.x * tile.x;
-	uv.y = uv.y * ((sizey * cPackTexFactors.y - 1.0) / sizey) + 0.5 / sizey + cPackTexFactors.y * tile.y;
-
-    //return(tex2Dlod(s, uv, lod));
-	return(textureLod(s,uv, lod));
-}
-
-vec4 sampleTerrain(sampler2D s, vec2 uv, vec2 tile, float lod)
-{
-	//return (tex2D(s,uv)*0.65+tex2D(s,uv*0.435)*0.35);
-	//return tex2D(s,uv);
-	return sampleTexturePackMipWrapped(s,uv,tile, lod);
-}
-#endif
 //##################################################################
 //END TERRAIN MULTITEXTURE
 //##################################################################
@@ -134,15 +97,6 @@ void VS()
         vColor = iColor;
     #endif
 
-    // #if defined(NORMALMAP) || defined(DIRBILLBOARD) || defined(IBL)
-    //     vec3 tangent = GetWorldTangent(modelMatrix);
-    //     vec3 bitangent = cross(tangent, vNormal) * iTangent.w;
-    //     vTexCoord = vec4(GetTexCoord(iTexCoord), bitangent.xy);
-    //     vTangent = vec4(tangent, bitangent.z);
-    // #else
-    //     vTexCoord = GetTexCoord(iTexCoord);
-    // #endif
-
     #if defined(NORMALMAP) || defined(DIRBILLBOARD) || defined(IBL)
         vec4 tangent = GetWorldTangent(modelMatrix);
         vec3 bitangent = cross(tangent.xyz, vNormal) * tangent.w;
@@ -152,7 +106,7 @@ void VS()
         vTexCoord = GetTexCoord(iTexCoord);
     #endif
 
-    vDetailTexCoord = cDetailTiling * vTexCoord.xy;
+    vDetailTexCoord = worldPos.xyz / cDetailTiling;
 
     #ifdef PERPIXEL
         // Per-pixel forward lighting
@@ -198,68 +152,83 @@ void VS()
 
 void PS()
 {
-    // Get material diffuse albedo
-    // #ifdef DIFFMAP
-    //     vec4 diffInput = texture2D(sDiffMap, vTexCoord.xy);
-    //     #ifdef ALPHAMASK
-    //         if (diffInput.a < 0.5)
-    //             discard;
-    //     #endif
-    //     vec4 diffColor = cMatDiffColor * diffInput;
-    // #else
-    //     vec4 diffColor = cMatDiffColor;
-    // #endif
-
-
-   //####################################################################
-   //BEGIN SINGLE WEIGHTMAP
-   //####################################################################
-        // Get material diffuse albedo
-    //vec3 weights = texture2D(sWeightMap0, vTexCoord.xy).rgb;
-        // float sumWeights = weights.r + weights.g + weights.b;
-        // weights /= sumWeights;
-        // vec4 diffColor = cMatDiffColor * (
-        //     weights.r * texture2D(sDetailMap1, vDetailTexCoord) +
-        //     weights.g * texture2D(sDetailMap2, vDetailTexCoord) + 
-        //     weights.b * texture2D(sDetailMap3, vDetailTexCoord)
-        // );
-   //####################################################################
-   //END SINGLE WEIGHTMAP
-   //####################################################################
 
     //####################################################################
     //BEGIN MULTITEXTURE
     //####################################################################
-    vec4 weights0 = texture(sWeightMap0, vTexCoord.xy).rgba;
-	vec4 weights1 = texture(sWeightMap1, vTexCoord.xy).rgba;
-
-    #ifdef USEMASKTEXTURE
-	float mask=texture(sMask4, vTexCoord.xy).r;
+     // Get material diffuse albedo
+    vec4 weights0 = texture(sWeightMap0, vTexCoord.xy);
+	vec4 weights1 = texture(sWeightMap1, vTexCoord.xy);
+	
+	#ifdef USEMASKTEXTURE
+		float mask=texture(sMask4, vTexCoord.xy).r;
 	#endif
-
-    float lod = mipmapLevel(vDetailTexCoord, cPackTexFactors.z);
-	lod = clamp(lod, 0.0, cPackTexFactors.w);
 	
-    vec4 tex1=sampleTerrain(sDetailMap2, vDetailTexCoord, vec2(0,0),lod);
-	vec4 tex2=sampleTerrain(sDetailMap2, vDetailTexCoord, vec2(1,0),lod);
-	vec4 tex3=sampleTerrain(sDetailMap2, vDetailTexCoord, vec2(2,0),lod);
-	vec4 tex4=sampleTerrain(sDetailMap2, vDetailTexCoord, vec2(3,0),lod);
+	#ifdef TRIPLANAR
 	
-	vec4 tex5=sampleTerrain(sDetailMap2, vDetailTexCoord, vec2(0,1),lod);
-	vec4 tex6=sampleTerrain(sDetailMap2, vDetailTexCoord, vec2(1,1),lod);
-	vec4 tex7=sampleTerrain(sDetailMap2, vDetailTexCoord, vec2(2,1),lod);
-	vec4 tex8=sampleTerrain(sDetailMap2, vDetailTexCoord, vec2(3,1),lod);
+	vec3 nrm = normalize(vNormal);
+	vec3 blending=abs(nrm);
+	blending = normalize(max(blending, 0.00001));
+	float b=blending.x+blending.y+blending.z;
+	blending=blending/b;
 	
-	float ma=max(tex1.a+weights0.r, max(tex2.a+weights0.g, max(tex3.a+weights0.b, max(tex4.a+weights0.a, max(tex5.a+weights1.r, max(tex6.a+weights1.g, max(tex7.a+weights1.b, tex8.a+weights1.a)))))))-0.2;
-	float b1=max(0, tex1.a+weights0.r-ma);
-	float b2=max(0, tex2.a+weights0.g-ma);
-	float b3=max(0, tex3.a+weights0.b-ma);
-	float b4=max(0, tex4.a+weights0.a-ma);
-	float b5=max(0, tex5.a+weights1.r-ma);
-	float b6=max(0, tex6.a+weights1.g-ma);
-	float b7=max(0, tex7.a+weights1.b-ma);
-	float b8=max(0, tex8.a+weights1.a-ma);
-	float bsum=b1+b2+b3+b4+b5+b6+b7+b8;
+	vec4 tex1=texture(sDetailMap2, vec3(vDetailTexCoord.zy*cLayerScaling1.r, 0))*blending.x +
+		texture(sDetailMap2, vec3(vDetailTexCoord.xy*cLayerScaling1.r, 0))*blending.z +
+		texture(sDetailMap2, vec3(vDetailTexCoord.xz*cLayerScaling1.r, 0))*blending.y;
+	vec4 tex2=texture(sDetailMap2, vec3(vDetailTexCoord.zy*cLayerScaling1.g, 1))*blending.x +
+		texture(sDetailMap2, vec3(vDetailTexCoord.xy*cLayerScaling1.g, 1))*blending.z +
+		texture(sDetailMap2, vec3(vDetailTexCoord.xz*cLayerScaling1.g, 1))*blending.y;
+	vec4 tex3=texture(sDetailMap2, vec3(vDetailTexCoord.zy*cLayerScaling1.b, 2))*blending.x +
+		texture(sDetailMap2, vec3(vDetailTexCoord.xy*cLayerScaling1.b, 2))*blending.z +
+		texture(sDetailMap2, vec3(vDetailTexCoord.xz*cLayerScaling1.b, 2))*blending.y;
+	vec4 tex4=texture(sDetailMap2, vec3(vDetailTexCoord.zy*cLayerScaling1.a, 3))*blending.x +
+		texture(sDetailMap2, vec3(vDetailTexCoord.xy*cLayerScaling1.a, 3))*blending.z +
+		texture(sDetailMap2, vec3(vDetailTexCoord.xz*cLayerScaling1.a, 3))*blending.y;
+	vec4 tex5=texture(sDetailMap2, vec3(vDetailTexCoord.zy*cLayerScaling2.r, 4))*blending.x +
+		texture(sDetailMap2, vec3(vDetailTexCoord.xy*cLayerScaling2.r, 4))*blending.z +
+		texture(sDetailMap2, vec3(vDetailTexCoord.xz*cLayerScaling2.r, 4))*blending.y;
+	vec4 tex6=texture(sDetailMap2, vec3(vDetailTexCoord.zy*cLayerScaling2.g, 5))*blending.x +
+		texture(sDetailMap2, vec3(vDetailTexCoord.xy*cLayerScaling2.g, 5))*blending.z +
+		texture(sDetailMap2, vec3(vDetailTexCoord.xz*cLayerScaling2.g, 5))*blending.y;
+	vec4 tex7=texture(sDetailMap2, vec3(vDetailTexCoord.zy*cLayerScaling2.b, 6))*blending.x +
+		texture(sDetailMap2, vec3(vDetailTexCoord.xy*cLayerScaling2.b, 6))*blending.z +
+		texture(sDetailMap2, vec3(vDetailTexCoord.xz*cLayerScaling2.b, 6))*blending.y;
+	vec4 tex8=texture(sDetailMap2, vec3(vDetailTexCoord.zy*cLayerScaling2.a, 7))*blending.x +
+		texture(sDetailMap2, vec3(vDetailTexCoord.xy*cLayerScaling2.a, 7))*blending.z +
+		texture(sDetailMap2, vec3(vDetailTexCoord.xz*cLayerScaling2.a, 7))*blending.y;
+	
+	#else
+		vec4 tex1=texture(sDetailMap2, vec3(vDetailTexCoord.xz*cLayerScaling1.r, 0));
+		vec4 tex2=texture(sDetailMap2, vec3(vDetailTexCoord.xz*cLayerScaling1.g, 1));
+		vec4 tex3=texture(sDetailMap2, vec3(vDetailTexCoord.xz*cLayerScaling1.b, 2));
+		vec4 tex4=texture(sDetailMap2, vec3(vDetailTexCoord.xz*cLayerScaling1.a, 3));
+		vec4 tex5=texture(sDetailMap2, vec3(vDetailTexCoord.xz*cLayerScaling2.r, 4));
+		vec4 tex6=texture(sDetailMap2, vec3(vDetailTexCoord.xz*cLayerScaling2.g, 5));
+		vec4 tex7=texture(sDetailMap2, vec3(vDetailTexCoord.xz*cLayerScaling2.b, 6));
+		vec4 tex8=texture(sDetailMap2, vec3(vDetailTexCoord.xz*cLayerScaling2.a, 7));
+	#endif
+	
+	#ifndef SMOOTHBLEND
+		float ma=max(tex1.a+weights0.r, max(tex2.a+weights0.g, max(tex3.a+weights0.b, max(tex4.a+weights0.a, max(tex5.a+weights1.r, max(tex6.a+weights1.g, max(tex7.a+weights1.b, tex8.a+weights1.a)))))))-0.2;
+		float b1=max(0, tex1.a+weights0.r-ma);
+		float b2=max(0, tex2.a+weights0.g-ma);
+		float b3=max(0, tex3.a+weights0.b-ma);
+		float b4=max(0, tex4.a+weights0.a-ma);
+		float b5=max(0, tex5.a+weights1.r-ma);
+		float b6=max(0, tex6.a+weights1.g-ma);
+		float b7=max(0, tex7.a+weights1.b-ma);
+		float b8=max(0, tex8.a+weights1.a-ma);
+	#else
+		float b1=weights0.r;
+		float b2=weights0.g;
+		float b3=weights0.b;
+		float b4=weights0.a;
+		float b5=weights1.r;
+		float b6=weights1.g;
+		float b7=weights1.b;
+		float b8=weights1.a;
+	#endif
+		float bsum=b1+b2+b3+b4+b5+b6+b7+b8;
 	vec4 diffColor=(tex1*b1+tex2*b2+tex3*b3+tex4*b4+tex5*b5+tex6*b6+tex7*b7+tex8*b8)/bsum;
 	//vec4 diffColor=tex1;
 	
@@ -300,32 +269,6 @@ void PS()
     diffColor.rgb = diffColor.rgb - diffColor.rgb * metalness;
 
 
-
-
-    //####################################################################
-    //BEGIN SINGLE HEIGHTMAP
-    //####################################################################
-    //Get normal
-    // #if defined(NORMALMAP) || defined(DIRBILLBOARD) || defined(IBL)
-    //     vec3 tangent = vTangent.xyz;
-    //     vec3 bitangent = vec3(vTexCoord.zw, vTangent.w);
-    //     mat3 tbn = mat3(tangent, bitangent, vNormal);
-    // #endif
-    // #ifdef NORMALMAP
-    //     vec3 nn = DecodeNormal(texture2D(sNormalMap, vTexCoord.xy));
-    //     //nn.rg *= 2.0;
-    //     vec3 normal = normalize(tbn * nn);
-    // #else
-    //     vec3 normal = normalize(vNormal);
-    // #endif
-    //####################################################################
-    //END SINGLE HEIGHTMAP
-    //####################################################################
-
-
-
-
-
     //####################################################################
     //BEGIN MULTITEXTURE
     //####################################################################
@@ -336,29 +279,43 @@ void PS()
         mat3 tbn = mat3(tangent, bitangent, vNormal);
     #endif
     #ifdef NORMALMAP
-       // vec3 nn = DecodeNormal(texture2D(sNormalMap, vTexCoord.xy));
-        //nn.rg *= 2.0;
-
-        //temp bsum override
-        //float bsum2=b1+b2+b3+b4;
-
-		vec3 bump1=DecodeNormal(sampleTerrain(sNormal3, vDetailTexCoord, vec2(0,0), lod));
-		vec3 bump2=DecodeNormal(sampleTerrain(sNormal3, vDetailTexCoord, vec2(1,0), lod));
-		vec3 bump3=DecodeNormal(sampleTerrain(sNormal3, vDetailTexCoord, vec2(2,0), lod));
-		vec3 bump4=DecodeNormal(sampleTerrain(sNormal3, vDetailTexCoord, vec2(3,0), lod));
-		
-		vec3 bump5=DecodeNormal(sampleTerrain(sNormal3, vDetailTexCoord, vec2(0,1), lod));
-		vec3 bump6=DecodeNormal(sampleTerrain(sNormal3, vDetailTexCoord, vec2(1,1), lod));
-		vec3 bump7=DecodeNormal(sampleTerrain(sNormal3, vDetailTexCoord, vec2(2,1), lod));
-		vec3 bump8=DecodeNormal(sampleTerrain(sNormal3, vDetailTexCoord, vec2(3,1), lod));
-
-        //vec3 nn = normalize(bump1*b1+bump2*b2+bump3*b3+bump4*b4);
-
-        vec3 nn = normalize(bump1*b1+bump2*b2+bump3*b3+bump4*b4+bump5*b5+bump6*b6+bump7*b7+bump8*b8);
-
-        vec3 res = nn/bsum;
-
-        vec3 normal = normalize(tbn * res);
+        // mat3 tbn = mat3(vTangent.xyz, vec3(vTexCoord.zw, vTangent.w), vNormal);
+        #ifdef TRIPLANAR
+		vec3 bump1=DecodeNormal(texture(sNormal3, vec3(vDetailTexCoord.zy*cLayerScaling1.r, 0)))*blending.x+
+			DecodeNormal(texture(sNormal3, vec3(vDetailTexCoord.xy*cLayerScaling1.r, 0)))*blending.z+
+			DecodeNormal(texture(sNormal3, vec3(vDetailTexCoord.xz*cLayerScaling1.r,0)))*blending.y;
+		vec3 bump2=DecodeNormal(texture(sNormal3, vec3(vDetailTexCoord.zy*cLayerScaling1.g, 1)))*blending.x+
+			DecodeNormal(texture(sNormal3, vec3(vDetailTexCoord.xy*cLayerScaling1.g, 1)))*blending.z+
+			DecodeNormal(texture(sNormal3, vec3(vDetailTexCoord.xz*cLayerScaling1.g,1)))*blending.y;
+		vec3 bump3=DecodeNormal(texture(sNormal3, vec3(vDetailTexCoord.zy*cLayerScaling1.b, 2)))*blending.x+
+			DecodeNormal(texture(sNormal3, vec3(vDetailTexCoord.xy*cLayerScaling1.b, 2)))*blending.z+
+			DecodeNormal(texture(sNormal3, vec3(vDetailTexCoord.xz*cLayerScaling1.b,2)))*blending.y;
+		vec3 bump4=DecodeNormal(texture(sNormal3, vec3(vDetailTexCoord.zy*cLayerScaling1.a, 3)))*blending.x+
+			DecodeNormal(texture(sNormal3, vec3(vDetailTexCoord.xy*cLayerScaling1.a, 3)))*blending.z+
+			DecodeNormal(texture(sNormal3, vec3(vDetailTexCoord.xz*cLayerScaling1.a,3)))*blending.y;
+		vec3 bump5=DecodeNormal(texture(sNormal3, vec3(vDetailTexCoord.zy*cLayerScaling2.r, 4)))*blending.x+
+			DecodeNormal(texture(sNormal3, vec3(vDetailTexCoord.xy*cLayerScaling2.r, 4)))*blending.z+
+			DecodeNormal(texture(sNormal3, vec3(vDetailTexCoord.xz*cLayerScaling2.r,4)))*blending.y;
+		vec3 bump6=DecodeNormal(texture(sNormal3, vec3(vDetailTexCoord.zy*cLayerScaling2.g, 5)))*blending.x+
+			DecodeNormal(texture(sNormal3, vec3(vDetailTexCoord.xy*cLayerScaling2.g, 5)))*blending.z+
+			DecodeNormal(texture(sNormal3, vec3(vDetailTexCoord.xz*cLayerScaling2.g,5)))*blending.y;
+		vec3 bump7=DecodeNormal(texture(sNormal3, vec3(vDetailTexCoord.zy*cLayerScaling2.b, 6)))*blending.x+
+			DecodeNormal(texture(sNormal3, vec3(vDetailTexCoord.xy*cLayerScaling2.b, 6)))*blending.z+
+			DecodeNormal(texture(sNormal3, vec3(vDetailTexCoord.xz*cLayerScaling2.b,6)))*blending.y;
+		vec3 bump8=DecodeNormal(texture(sNormal3, vec3(vDetailTexCoord.zy*cLayerScaling2.a, 7)))*blending.x+
+			DecodeNormal(texture(sNormal3, vec3(vDetailTexCoord.xy*cLayerScaling2.a, 7)))*blending.z+
+			DecodeNormal(texture(sNormal3, vec3(vDetailTexCoord.xz*cLayerScaling2.a,7)))*blending.y;
+		#else
+			vec3 bump1=DecodeNormal(texture(sNormal3, vec3(vDetailTexCoord.xz*cLayerScaling1.r,0)));
+			vec3 bump2=DecodeNormal(texture(sNormal3, vec3(vDetailTexCoord.xz*cLayerScaling1.g,1)));
+			vec3 bump3=DecodeNormal(texture(sNormal3, vec3(vDetailTexCoord.xz*cLayerScaling1.b,2)));
+			vec3 bump4=DecodeNormal(texture(sNormal3, vec3(vDetailTexCoord.xz*cLayerScaling1.a,3)));
+			vec3 bump5=DecodeNormal(texture(sNormal3, vec3(vDetailTexCoord.xz*cLayerScaling2.r,4)));
+			vec3 bump6=DecodeNormal(texture(sNormal3, vec3(vDetailTexCoord.xz*cLayerScaling2.g,5)));
+			vec3 bump7=DecodeNormal(texture(sNormal3, vec3(vDetailTexCoord.xz*cLayerScaling2.b,6)));
+			vec3 bump8=DecodeNormal(texture(sNormal3, vec3(vDetailTexCoord.xz*cLayerScaling2.a,7)));
+		#endif
+		vec3 normal=tbn*normalize(((bump1*b1+bump2*b2+bump3*b3+bump4*b4+bump5*b5+bump6*b6+bump7*b7+bump8*b8)/bsum));
     #else
         vec3 normal = normalize(vNormal);
     #endif
@@ -458,13 +415,13 @@ void PS()
             finalColor += cMatEmissiveColor;
         #endif
 
-      // gl_FragColor = vec4(GetFog(finalColor, fogFactor), diffColor.a);
+       gl_FragColor = vec4(GetFog(finalColor, fogFactor), diffColor.a);
 
 
 
         // gl_FragColor =  vec4(pow(((1-fogFactor) * diffColor.rgb + fogFactor * finalColor.rgb),vec3(1.0 / 2.2, 1.0 / 2.2, 1.0 / 2.2)), diffColor.a);
         //gl_FragColor =  vec4(pow(GetExpFog(finalColor.rgb, diffColor.rgb, fogFactor),vec3(1.0 / 2.2, 1.0 / 2.2, 1.0 / 2.2)), diffColor.a);
-        gl_FragColor = vec4(pow(GetFog(finalColor, fogFactor), vec3(1.0 / 2.2, 1.0 / 2.2, 1.0 / 2.2)), diffColor.a);
+       // gl_FragColor = vec4(pow(GetFog(finalColor, fogFactor), vec3(1.0 / 2.2, 1.0 / 2.2, 1.0 / 2.2)), diffColor.a);
 
     #endif
 }

@@ -96,8 +96,8 @@ public:
         context->RegisterFactory<GeomReplicator>();
     }
 
-    GeomReplicator(Context *context) 
-        : StaticModel(context), numVertsPerGeom(0), batchCount_(0), showGeomVertIndeces_(false)
+	GeomReplicator(Context *context)
+		: StaticModel(context), numVertsPerGeom(0), batchCount_(0), showGeomVertIndeces_(false), qplist_(PODVector<PRotScale>()), normalOverride_(Vector3::ZERO)
     {
     }
 
@@ -106,12 +106,16 @@ public:
 		cycleTimer_ = 0;
     }
 
-    unsigned Replicate(const PODVector<PRotScale> &qplist, const Vector3 &normalOverride=Vector3::ZERO);
+    unsigned Replicate( PODVector<PRotScale> &qplist,  Vector3 &normalOverride);
     bool ConfigWindVelocity(const PODVector<unsigned> &vertIndecesToMove, unsigned batchCount, 
                             const Vector3 &velocity, float cycleTimer);
     void WindAnimationEnabled(bool enable);
     void ShowGeomVertIndeces(bool show);
 	void Destroy();
+	void Update();
+
+	PODVector<PRotScale> qplist_;
+	Vector3 normalOverride_;
 
 protected:
     unsigned ReplicateIndeces(IndexBuffer *idxbuffer, unsigned numVertices, unsigned expandSize);
