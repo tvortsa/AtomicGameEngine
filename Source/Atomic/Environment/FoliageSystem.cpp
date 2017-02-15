@@ -33,6 +33,7 @@
 #include "../Graphics/Technique.h"
 #include "../Environment/FoliageSystem.h"
 #include "../Graphics/Renderer.h"
+#include <Atomic/Math/Vector3.h>
 #include <Atomic/IO/Log.h>
 
 #if defined(_MSC_VER)
@@ -75,7 +76,8 @@ namespace Atomic
 	{
 		Component* component = static_cast<Component*> (eventData[Atomic::ComponentRemoved::P_COMPONENT].GetPtr());
 		if (component == this) {
-			vegReplicator_->Destroy();
+			for (unsigned i = 0; i < vegReplicators_.Size(); i++)
+				vegReplicators_[i]->Destroy();
 		}
 
 	}
@@ -85,15 +87,22 @@ namespace Atomic
 	{
 		initialized_ = true;
 		SubscribeToEvent(node_->GetScene(), E_COMPONENTREMOVED, ATOMIC_HANDLER(FoliageSystem, HandleComponentRemoved));
-		DrawGrass();
+		Vector3 pos = Vector3(100, 0, 0);
+		DrawGrass(pos);
+		Vector3 pos2 = Vector3(200, 0, 0);
+		DrawGrass(pos2);
+		Vector3 pos3 = Vector3(-100, 0, 0);
+		DrawGrass(pos3);
+		Vector3 pos4 = Vector3(100, 0, -100);
+		DrawGrass(pos4);
 	}
 
 	void FoliageSystem::OnSetEnabled()
 	{
 		bool enabled = IsEnabledEffective();
 
-		if(vegReplicator_)
-	    	vegReplicator_->SetEnabled(enabled);
+		for(unsigned i = 0; i < vegReplicators_.Size(); i++)
+	    	vegReplicators_[i]->SetEnabled(enabled);
 	}
 
 
@@ -112,6 +121,7 @@ namespace Atomic
 			{
 				terrain_ = terrains[0];
 				SubscribeToEvent(node->GetScene(), E_SCENEDRAWABLEUPDATEFINISHED, ATOMIC_HANDLER(FoliageSystem, HandleDrawableUpdateFinished));
+				SubscribeToEvent(node->GetScene(), E_POSTUPDATE, ATOMIC_HANDLER(FoliageSystem, HandlePostUpdate));
 				// TODO: Make this better
 				// If we try to get height of the terrain right away it will be zero because it's not finished loading. So I wait until the scene has finished
 				// updating all its drawables (for want of a better event) and then initialize the grass if it isn't already initialized.
@@ -126,7 +136,18 @@ namespace Atomic
 		
 	}
 
-	void FoliageSystem::DrawGrass() {
+	void FoliageSystem::HandlePostUpdate(StringHash eventType, VariantMap& eventData)
+	{
+		//Camera* cam = GetScene()->GetComponent<Camera>();
+		//Vector3 campos = cam->GetNode()->GetPosition();
+		//if ()
+		//{
+
+		//}
+
+	}
+
+	void FoliageSystem::DrawGrass(Vector3 position) {
 		const unsigned NUM_OBJECTS = 20000;
 		//terrain_ = node_->GetComponent<Terrain>();
 
@@ -142,7 +163,7 @@ namespace Atomic
 		{
 			PRotScale qp;
 			
-			qp.pos = Vector3(Random(180.0f) - 90.0f, 0.0f, Random(180.0f) - 90.0f);
+			qp.pos = Vector3(Random(180.0f) - 90.0f, 0.0f, Random(180.0f) - 90.0f) + position;
 			qp.rot = Quaternion(0.0f, Random(360.0f), 0.0f);
 			qp.pos.y_ = terrain_->GetHeight(rot * qp.pos) - 0.2f;
 			qp.scale = 2.5f + Random(2.0f);
@@ -152,14 +173,13 @@ namespace Atomic
 		Model *pModel = cache->GetResource<Model>("Models/Veg/vegbrush.mdl");
 		SharedPtr<Model> cloneModel = pModel->Clone();
 
-		if(!vegReplicator_)
-		   vegReplicator_ = node_->CreateComponent<GeomReplicator>();
-		vegReplicator_->SetModel(cloneModel);
-		vegReplicator_->SetMaterial(cache->GetResource<Material>("Models/Veg/veg-alphamask.xml"));
+		GeomReplicator *grass = node_->CreateComponent<GeomReplicator>();
+		grass->SetModel(cloneModel);
+		grass->SetMaterial(cache->GetResource<Material>("Models/Veg/veg-alphamask.xml"));
 
 		Vector3 lightDir(0.6f, -1.0f, 0.8f);
 		lightDir = -1.0f * lightDir.Normalized();
-		vegReplicator_->Replicate(qpList_, lightDir);
+		grass->Replicate(qpList_, lightDir);
 
 		// specify which verts in the geom to move
 		// - for the vegbrush model, the top two vertex indeces are 2 and 3
@@ -176,8 +196,10 @@ namespace Atomic
 		// specify the cycle timer
 		float cycleTimer = 1.4f;
 
-		vegReplicator_->ConfigWindVelocity(topVerts, batchCount, windVel, cycleTimer);
-		vegReplicator_->WindAnimationEnabled(true);
+		grass->ConfigWindVelocity(topVerts, batchCount, windVel, cycleTimer);
+		grass->WindAnimationEnabled(true);
+
+		vegReplicators_.Push(grass);
 
 	}
 

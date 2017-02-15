@@ -62,10 +62,6 @@ namespace Atomic
 //=============================================================================
 unsigned GeomReplicator::Replicate(PODVector<PRotScale> &qplist, Vector3 &normalOverride)
 {
-	if (qplist_.Size() == 0) {
-		qplist_ = qplist;
-		normalOverride_ = normalOverride;
-	}
 
     Geometry *pGeometry = GetModel()->GetGeometry(0, 0);
     VertexBuffer *pVbuffer = pGeometry->GetVertexBuffer(0);
@@ -402,13 +398,6 @@ void GeomReplicator::HandleUpdate(StringHash eventType, VariantMap& eventData)
     }
 
     RenderGeomVertIndices();
-}
-
-void GeomReplicator::Update()
-{
-	if (qplist_.Size() > 0) {
-		Replicate(qplist_, normalOverride_);
-	}
 }
 
 void GeomReplicator::Destroy()

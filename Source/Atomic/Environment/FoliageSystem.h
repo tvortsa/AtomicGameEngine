@@ -56,7 +56,7 @@ namespace Atomic
 		/// Register object factory. Drawable must be registered first.
 		static void RegisterObject(Context* context);
 
-		void DrawGrass();
+		void DrawGrass(Vector3 position);
 
 	protected:
 
@@ -64,6 +64,7 @@ namespace Atomic
 		//void ApplyAttributes();
 		void HandleComponentRemoved(StringHash eventType, VariantMap& eventData);
 		void HandleDrawableUpdateFinished(StringHash eventType, VariantMap& eventData);
+		void HandlePostUpdate(StringHash eventType, VariantMap& eventData);
 		void OnNodeSet(Node* node);
 	
 		void Initialize();
@@ -72,13 +73,12 @@ namespace Atomic
 		virtual void OnSetEnabled();
 		//Grass stuff
 		PODVector<PRotScale> qpList_;
-		// replicator
-		SharedPtr<GeomReplicator> vegReplicator_;
+		PODVector<GeomReplicator*> vegReplicators_;
 		WeakPtr<Node> nodeRep_;
 		SharedPtr<Terrain> terrain_;
 		SharedPtr<Node> node_;
 
-
+		Vector3 lastPos_;
 	};
 
 }

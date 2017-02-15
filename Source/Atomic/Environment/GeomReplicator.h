@@ -97,7 +97,7 @@ public:
     }
 
 	GeomReplicator(Context *context)
-		: StaticModel(context), numVertsPerGeom(0), batchCount_(0), showGeomVertIndices_(false), qplist_(PODVector<PRotScale>()), normalOverride_(Vector3::ZERO)
+		: StaticModel(context), numVertsPerGeom(0), batchCount_(0), showGeomVertIndices_(false)
     {
     }
 
@@ -112,10 +112,6 @@ public:
     void WindAnimationEnabled(bool enable);
     void ShowGeomVertIndices(bool show);
 	void Destroy();
-	void Update();
-
-	PODVector<PRotScale> qplist_;
-	Vector3 normalOverride_;
 
 protected:
     unsigned ReplicateIndices(IndexBuffer *idxbuffer, unsigned numVertices, unsigned expandSize);
