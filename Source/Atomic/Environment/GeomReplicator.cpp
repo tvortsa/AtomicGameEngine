@@ -164,8 +164,8 @@ unsigned GeomReplicator::Replicate(PODVector<PRotScale> &qplist, Vector3 &normal
         pVbuffer->Unlock();
     }
 
-    // replicate indeces
-    unsigned newIdxCount = ReplicateIndeces(pIbuffer, numVertices, qplist.Size());
+    // replicate indices
+    unsigned newIdxCount = ReplicateIndices(pIbuffer, numVertices, qplist.Size());
 
     // set draw range and bounding box
     pGeometry->SetDrawRange(TRIANGLE_LIST, 0, newIdxCount);
@@ -176,15 +176,15 @@ unsigned GeomReplicator::Replicate(PODVector<PRotScale> &qplist, Vector3 &normal
 
 
 
-unsigned GeomReplicator::ReplicateIndeces(IndexBuffer *idxbuffer, unsigned numVertices, unsigned expandSize)
+unsigned GeomReplicator::ReplicateIndices(IndexBuffer *idxbuffer, unsigned numVertices, unsigned expandSize)
 {
-    unsigned numIndeces = idxbuffer->GetIndexCount();
-    unsigned origIdxBuffSize = numIndeces * sizeof(unsigned short);
-    unsigned newIdxCount = expandSize * numIndeces;
+    unsigned numIndices = idxbuffer->GetIndexCount();
+    unsigned origIdxBuffSize = numIndices * sizeof(unsigned short);
+    unsigned newIdxCount = expandSize * numIndices;
     bool isOver64k = newIdxCount > 1024*64;
-    SharedArrayPtr<unsigned short> origIdxBuff( new unsigned short[numIndeces] );
+    SharedArrayPtr<unsigned short> origIdxBuff( new unsigned short[numIndices] );
 
-    // copy orig indeces
+    // copy orig indices
     void *pIndexData = (void*)idxbuffer->Lock(0, idxbuffer->GetIndexCount());
 
     if (pIndexData)
@@ -193,16 +193,16 @@ unsigned GeomReplicator::ReplicateIndeces(IndexBuffer *idxbuffer, unsigned numVe
         idxbuffer->Unlock();
     }
 
-    // replicate indeces
+    // replicate indices
     if (isOver64k)
     {
         PODVector<int> newIndexList(newIdxCount);
 
         for (unsigned i = 0; i < expandSize; ++i)
         {
-            for (unsigned j = 0; j < numIndeces; ++j)
+            for (unsigned j = 0; j < numIndices; ++j)
             {
-                newIndexList[i*numIndeces + j] = i*numVertices + origIdxBuff[j];
+                newIndexList[i*numIndices + j] = i*numVertices + origIdxBuff[j];
             }
         }
 
@@ -215,9 +215,9 @@ unsigned GeomReplicator::ReplicateIndeces(IndexBuffer *idxbuffer, unsigned numVe
 
         for (unsigned i = 0; i < expandSize; ++i)
         {
-            for (unsigned j = 0; j < numIndeces; ++j)
+            for (unsigned j = 0; j < numIndices; ++j)
             {
-                newIndexList[i*numIndeces + j] = i*numVertices + origIdxBuff[j];
+                newIndexList[i*numIndices + j] = i*numVertices + origIdxBuff[j];
             }
         }
 
@@ -228,22 +228,22 @@ unsigned GeomReplicator::ReplicateIndeces(IndexBuffer *idxbuffer, unsigned numVe
     return newIdxCount;
 }
 
-bool GeomReplicator::ConfigWindVelocity(const PODVector<unsigned> &vertIndecesToMove, unsigned batchCount, 
+bool GeomReplicator::ConfigWindVelocity(const PODVector<unsigned> &vertIndicesToMove, unsigned batchCount, 
                                         const Vector3 &velocity, float cycleTimer)
 {
-    vertIndecesToMove_ = vertIndecesToMove;
+    vertIndicesToMove_ = vertIndicesToMove;
     windVelocity_      = velocity;
     cycleTimer_        = cycleTimer;
     batchCount_        = batchCount;
     currentVertexIdx_  = 0;
     timeStepAccum_     = 0.0f;
 
-    // validate vert indeces
-    assert(vertIndecesToMove.Size() <= numVertsPerGeom && "number of indeces to move is greater than the orig geom index size");
+    // validate vert indices
+    assert(vertIndicesToMove.Size() <= numVertsPerGeom && "number of indices to move is greater than the orig geom index size");
 
-    for ( unsigned i = 0; i < vertIndecesToMove.Size(); ++i )
+    for ( unsigned i = 0; i < vertIndicesToMove.Size(); ++i )
     {
-        assert(vertIndecesToMove[i] < numVertsPerGeom && "vert index must be contained within the original geom size" );
+        assert(vertIndicesToMove[i] < numVertsPerGeom && "vert index must be contained within the original geom size" );
     }
 
     timerUpdate_.Reset();
@@ -267,9 +267,9 @@ void GeomReplicator::AnimateVerts()
 
         vertsToMove++;
 
-        for ( unsigned j = 0; j < vertIndecesToMove_.Size(); ++j )
+        for ( unsigned j = 0; j < vertIndicesToMove_.Size(); ++j )
         {
-            unsigned vertIdx = idx + vertIndecesToMove_[j];
+            unsigned vertIdx = idx + vertIndicesToMove_[j];
 
             int ielptime = animatedVertexList_[vertIdx].timer.GetMSec(true);
             if ( ielptime > MaxTime_Elapsed ) ielptime = MaxTime_Elapsed;
@@ -305,7 +305,7 @@ void GeomReplicator::AnimateVerts()
 
             // dbg text3d
             #ifdef VERT_INDEX_VISUAL
-            if ( showGeomVertIndeces_ && currentVertexIdx_ == 0 && i == 0 )
+            if ( showGeomVertIndices_ && currentVertexIdx_ == 0 && i == 0 )
             {
                 Vector3 pos = animatedVertexList_[vertIdx].origPos + animatedVertexList_[vertIdx].deltaMovement;
                 nodeText3DVertList_[vertIdx]->SetPosition(pos);
@@ -326,10 +326,10 @@ void GeomReplicator::AnimateVerts()
             if (idx >= animatedVertexList_.Size() )
                 break;
 
-            for ( unsigned j = 0; j < vertIndecesToMove_.Size(); ++j )
+            for ( unsigned j = 0; j < vertIndicesToMove_.Size(); ++j )
             {
-                unsigned vertIdx = idx + vertIndecesToMove_[j];
-                unsigned char *pDataAlign = (unsigned char *)(pVertexData + (i*numVertsPerGeom + vertIndecesToMove_[j]) * vertexSize );
+                unsigned vertIdx = idx + vertIndicesToMove_[j];
+                unsigned char *pDataAlign = (unsigned char *)(pVertexData + (i*numVertsPerGeom + vertIndicesToMove_[j]) * vertexSize );
 
                 Vector3 &pos = *reinterpret_cast<Vector3*>( pDataAlign );
                 pos = animatedVertexList_[vertIdx].origPos + animatedVertexList_[vertIdx].deltaMovement;
@@ -360,22 +360,22 @@ void GeomReplicator::WindAnimationEnabled(bool enable)
     }
 }
 
-void GeomReplicator::ShowGeomVertIndeces(bool show)
+void GeomReplicator::ShowGeomVertIndices(bool show)
 {
     #ifdef VERT_INDEX_VISUAL
-    showGeomVertIndeces_ = show;
+    showGeomVertIndices_ = show;
 
     for ( unsigned i = 0; i < nodeText3DVertList_.Size(); ++i )
     {
-        nodeText3DVertList_[i]->SetEnabled( showGeomVertIndeces_ );
+        nodeText3DVertList_[i]->SetEnabled( showGeomVertIndices_ );
     }
     #endif
 }
 
-void GeomReplicator::RenderGeomVertIndeces()
+void GeomReplicator::RenderGeomVertIndices()
 {
     #ifdef VERT_INDEX_VISUAL
-    if ( showGeomVertIndeces_ )
+    if ( showGeomVertIndices_ )
     {
         DebugRenderer *dbgRenderer = GetScene()->GetComponent<DebugRenderer>();
 
@@ -401,13 +401,14 @@ void GeomReplicator::HandleUpdate(StringHash eventType, VariantMap& eventData)
         timerUpdate_.Reset();
     }
 
-    RenderGeomVertIndeces();
+    RenderGeomVertIndices();
 }
 
 void GeomReplicator::Update()
 {
-	if (qplist_.Size() > 0)
+	if (qplist_.Size() > 0) {
 		Replicate(qplist_, normalOverride_);
+	}
 }
 
 void GeomReplicator::Destroy()

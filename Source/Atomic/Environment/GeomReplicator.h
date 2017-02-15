@@ -97,7 +97,7 @@ public:
     }
 
 	GeomReplicator(Context *context)
-		: StaticModel(context), numVertsPerGeom(0), batchCount_(0), showGeomVertIndeces_(false), qplist_(PODVector<PRotScale>()), normalOverride_(Vector3::ZERO)
+		: StaticModel(context), numVertsPerGeom(0), batchCount_(0), showGeomVertIndices_(false), qplist_(PODVector<PRotScale>()), normalOverride_(Vector3::ZERO)
     {
     }
 
@@ -107,10 +107,10 @@ public:
     }
 
     unsigned Replicate( PODVector<PRotScale> &qplist,  Vector3 &normalOverride);
-    bool ConfigWindVelocity(const PODVector<unsigned> &vertIndecesToMove, unsigned batchCount, 
+    bool ConfigWindVelocity(const PODVector<unsigned> &vertIndicesToMove, unsigned batchCount, 
                             const Vector3 &velocity, float cycleTimer);
     void WindAnimationEnabled(bool enable);
-    void ShowGeomVertIndeces(bool show);
+    void ShowGeomVertIndices(bool show);
 	void Destroy();
 	void Update();
 
@@ -118,14 +118,14 @@ public:
 	Vector3 normalOverride_;
 
 protected:
-    unsigned ReplicateIndeces(IndexBuffer *idxbuffer, unsigned numVertices, unsigned expandSize);
+    unsigned ReplicateIndices(IndexBuffer *idxbuffer, unsigned numVertices, unsigned expandSize);
     void AnimateVerts();
-    void RenderGeomVertIndeces();
+    void RenderGeomVertIndices();
     void HandleUpdate(StringHash eventType, VariantMap& eventData);
 
 protected:
     PODVector<MoveAccumulator>  animatedVertexList_;
-    PODVector<unsigned>         vertIndecesToMove_;
+    PODVector<unsigned>         vertIndicesToMove_;
 
     unsigned                    numVertsPerGeom;
     unsigned                    batchCount_;
@@ -137,7 +137,7 @@ protected:
 
     // dbg
     Vector<Node*>               nodeText3DVertList_;
-    bool                        showGeomVertIndeces_;
+    bool                        showGeomVertIndices_;
 
 protected:
     enum FrameRateType { FrameRate_MSec = 32    };
