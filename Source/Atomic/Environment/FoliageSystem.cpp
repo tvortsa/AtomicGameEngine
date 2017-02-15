@@ -87,14 +87,14 @@ namespace Atomic
 	{
 		initialized_ = true;
 		SubscribeToEvent(node_->GetScene(), E_COMPONENTREMOVED, ATOMIC_HANDLER(FoliageSystem, HandleComponentRemoved));
-		Vector3 pos = Vector3(100, 0, 0);
-		DrawGrass(pos);
-		Vector3 pos2 = Vector3(200, 0, 0);
-		DrawGrass(pos2);
-		Vector3 pos3 = Vector3(-100, 0, 0);
-		DrawGrass(pos3);
-		Vector3 pos4 = Vector3(100, 0, -100);
-		DrawGrass(pos4);
+		//Vector3 pos = Vector3(100, 0, 0);
+		//DrawGrass(pos);
+		//Vector3 pos2 = Vector3(200, 0, 0);
+		//DrawGrass(pos2);
+		//Vector3 pos3 = Vector3(-100, 0, 0);
+		//DrawGrass(pos3);
+		//Vector3 pos4 = Vector3(100, 0, -100);
+		//DrawGrass(pos4);
 	}
 
 	void FoliageSystem::OnSetEnabled()
@@ -121,7 +121,7 @@ namespace Atomic
 			{
 				terrain_ = terrains[0];
 				SubscribeToEvent(node->GetScene(), E_SCENEDRAWABLEUPDATEFINISHED, ATOMIC_HANDLER(FoliageSystem, HandleDrawableUpdateFinished));
-				SubscribeToEvent(node->GetScene(), E_POSTUPDATE, ATOMIC_HANDLER(FoliageSystem, HandlePostUpdate));
+				SubscribeToEvent(E_POSTRENDERUPDATE, ATOMIC_HANDLER(FoliageSystem, HandlePostUpdate));
 				// TODO: Make this better
 				// If we try to get height of the terrain right away it will be zero because it's not finished loading. So I wait until the scene has finished
 				// updating all its drawables (for want of a better event) and then initialize the grass if it isn't already initialized.
@@ -138,34 +138,73 @@ namespace Atomic
 
 	void FoliageSystem::HandlePostUpdate(StringHash eventType, VariantMap& eventData)
 	{
-		//Camera* cam = GetScene()->GetComponent<Camera>();
-		//Vector3 campos = cam->GetNode()->GetPosition();
-		//if ()
-		//{
+		if (!terrain_)
+			return;
 
-		//}
+		Renderer* r = GetSubsystem<Renderer>();
+		if (!r)
+			return;
 
+		Viewport* viewport = r->GetViewport(0);
+		if (!viewport)
+			return;
+
+		IntVector2 terrainsize = (terrain_->GetNumPatches() * terrain_->GetPatchSize());
+		IntVector2 cellsize = terrainsize / 16;
+
+
+		Camera *cam =  viewport->GetCamera();
+		if (cam) {
+			Vector3 campos = cam->GetNode()->GetPosition();
+			campos.y_ = 0;
+
+			IntVector2 campos2d = IntVector2(campos.x_, campos.z_);
+
+
+			IntVector2 sector = IntVector2(  floor(campos2d.x_ / cellsize.x_), floor(campos2d.y_ / cellsize.y_));
+		
+
+			//ATOMIC_LOGDEBUG(sector.ToString());
+			Vector3 pos = Vector3(sector.x_ * cellsize.x_, 0, sector.y_ * cellsize.y_);
+			ATOMIC_LOGDEBUG("New grass " + pos.ToString() + " Sector: " + sector.ToString());
+				
+			if (lastSector_ != sector)
+			{
+				//if(vegReplicators_.Size() > 0)
+				//	for (unsigned i = 0; i < vegReplicators_.Size(); i++) {
+				//		vegReplicators_[i]->Destroy();
+				//	}
+
+				lastSector_ = sector;
+
+				
+				
+				DrawGrass(pos);
+			}
+		}
 	}
 
 	void FoliageSystem::DrawGrass(Vector3 position) {
-		const unsigned NUM_OBJECTS = 20000;
-		//terrain_ = node_->GetComponent<Terrain>();
+		const unsigned NUM_OBJECTS = 1000;
 
 		if (!terrain_){
 			ATOMIC_LOGERROR("Foliage system couldn't find terrain");
 			return;
 		}
 
+
 		ResourceCache* cache = GetSubsystem<ResourceCache>();
-		Quaternion rot = node_->GetRotation();
+
 	//	Vector3 rotatedpos = (rot.Inverse() * qp.pos);  //  (rot.Inverse() * qp.pos) + terrainpos;
 		for (unsigned i = 0; i < NUM_OBJECTS; ++i)
 		{
 			PRotScale qp;
 			
-			qp.pos = Vector3(Random(180.0f) - 90.0f, 0.0f, Random(180.0f) - 90.0f) + position;
+			int cellsize = 32;
+
+			qp.pos = (node_->GetRotation().Inverse() * Vector3(Random(cellsize), 0.0f, Random(cellsize))) + (node_->GetRotation().Inverse() * position);
 			qp.rot = Quaternion(0.0f, Random(360.0f), 0.0f);
-			qp.pos.y_ = terrain_->GetHeight(rot * qp.pos) - 0.2f;
+			qp.pos.y_ = terrain_->GetHeight(node_->GetRotation() * qp.pos) - 0.2f;
 			qp.scale = 2.5f + Random(2.0f);
 			qpList_.Push(qp);
 		}
@@ -178,6 +217,7 @@ namespace Atomic
 		grass->SetMaterial(cache->GetResource<Material>("Models/Veg/veg-alphamask.xml"));
 
 		Vector3 lightDir(0.6f, -1.0f, 0.8f);
+
 		lightDir = -1.0f * lightDir.Normalized();
 		grass->Replicate(qpList_, lightDir);
 

@@ -78,7 +78,7 @@ namespace Atomic
 		SharedPtr<Terrain> terrain_;
 		SharedPtr<Node> node_;
 
-		Vector3 lastPos_;
+		IntVector2 lastSector_;
 	};
 
 }
