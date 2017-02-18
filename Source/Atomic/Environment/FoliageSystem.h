@@ -37,7 +37,7 @@
 #include "../Scene/Node.h"
 #include "../Graphics/Terrain.h"
 #include "../Environment/GeomReplicator.h"
-
+#include "Atomic\Container\HashMap.h"
 namespace Atomic
 {
 
@@ -56,7 +56,7 @@ namespace Atomic
 		/// Register object factory. Drawable must be registered first.
 		static void RegisterObject(Context* context);
 
-		void DrawGrass(Vector3 position);
+		void DrawGrass(Vector3 position, IntVector2 sector);
 
 	protected:
 
@@ -73,11 +73,10 @@ namespace Atomic
 		virtual void OnSetEnabled();
 		//Grass stuff
 		PODVector<PRotScale> qpList_;
-		PODVector<GeomReplicator*> vegReplicators_;
+		HashMap<IntVector2, GeomReplicator*> vegReplicators_;
 		WeakPtr<Node> nodeRep_;
 		SharedPtr<Terrain> terrain_;
 		SharedPtr<Node> node_;
-
 		IntVector2 lastSector_;
 	};
 

@@ -35,7 +35,6 @@
 #include "../Graphics/Renderer.h"
 #include <Atomic/Math/Vector3.h>
 #include <Atomic/IO/Log.h>
-
 #if defined(_MSC_VER)
 #include "stdint.h"
 #endif
@@ -52,6 +51,7 @@ namespace Atomic
 	FoliageSystem::FoliageSystem(Context *context) : Component(context)
 	{
 		initialized_ = false;
+		context_ = context;
 	}
 
 	FoliageSystem::~FoliageSystem()
@@ -76,8 +76,10 @@ namespace Atomic
 	{
 		Component* component = static_cast<Component*> (eventData[Atomic::ComponentRemoved::P_COMPONENT].GetPtr());
 		if (component == this) {
-			for (unsigned i = 0; i < vegReplicators_.Size(); i++)
-				vegReplicators_[i]->Destroy();
+			for (HashMap<IntVector2, GeomReplicator*>::ConstIterator i = vegReplicators_.Begin(); i != vegReplicators_.End(); ++i)
+			{
+				i->second_->Destroy();
+			}
 		}
 
 	}
@@ -87,22 +89,17 @@ namespace Atomic
 	{
 		initialized_ = true;
 		SubscribeToEvent(node_->GetScene(), E_COMPONENTREMOVED, ATOMIC_HANDLER(FoliageSystem, HandleComponentRemoved));
-		//Vector3 pos = Vector3(100, 0, 0);
-		//DrawGrass(pos);
-		//Vector3 pos2 = Vector3(200, 0, 0);
-		//DrawGrass(pos2);
-		//Vector3 pos3 = Vector3(-100, 0, 0);
-		//DrawGrass(pos3);
-		//Vector3 pos4 = Vector3(100, 0, -100);
-		//DrawGrass(pos4);
 	}
 
 	void FoliageSystem::OnSetEnabled()
 	{
 		bool enabled = IsEnabledEffective();
 
-		for(unsigned i = 0; i < vegReplicators_.Size(); i++)
-	    	vegReplicators_[i]->SetEnabled(enabled);
+		for (HashMap<IntVector2, GeomReplicator*>::ConstIterator i = vegReplicators_.Begin(); i != vegReplicators_.End(); ++i)
+		{
+			i->second_->SetEnabled(false);
+		}
+
 	}
 
 
@@ -138,8 +135,7 @@ namespace Atomic
 
 	void FoliageSystem::HandlePostUpdate(StringHash eventType, VariantMap& eventData)
 	{
-		if (!terrain_)
-			return;
+
 
 		Renderer* r = GetSubsystem<Renderer>();
 		if (!r)
@@ -161,37 +157,31 @@ namespace Atomic
 			IntVector2 campos2d = IntVector2(campos.x_, campos.z_);
 
 
-			IntVector2 sector = IntVector2(  floor(campos2d.x_ / cellsize.x_), floor(campos2d.y_ / cellsize.y_));
+			IntVector2 sector = IntVector2(  floor(campos2d.x_ / cellsize.x_) -1, floor(campos2d.y_ / cellsize.y_) -1);
 		
 
 			//ATOMIC_LOGDEBUG(sector.ToString());
 			Vector3 pos = Vector3(sector.x_ * cellsize.x_, 0, sector.y_ * cellsize.y_);
-			ATOMIC_LOGDEBUG("New grass " + pos.ToString() + " Sector: " + sector.ToString());
-				
+			
 			if (lastSector_ != sector)
 			{
-				//if(vegReplicators_.Size() > 0)
-				//	for (unsigned i = 0; i < vegReplicators_.Size(); i++) {
-				//		vegReplicators_[i]->Destroy();
-				//	}
-
+				vegReplicators_.Clear();
 				lastSector_ = sector;
 
+				ATOMIC_LOGDEBUG("New grass " + pos.ToString() + " Sector: " + sector.ToString());
 				
-				
-				DrawGrass(pos);
+				DrawGrass(pos, sector);
 			}
 		}
 	}
 
-	void FoliageSystem::DrawGrass(Vector3 position) {
+	void FoliageSystem::DrawGrass(Vector3 position, IntVector2 sector) {
 		const unsigned NUM_OBJECTS = 1000;
 
 		if (!terrain_){
 			ATOMIC_LOGERROR("Foliage system couldn't find terrain");
 			return;
 		}
-
 
 		ResourceCache* cache = GetSubsystem<ResourceCache>();
 
@@ -239,7 +229,7 @@ namespace Atomic
 		grass->ConfigWindVelocity(topVerts, batchCount, windVel, cycleTimer);
 		grass->WindAnimationEnabled(true);
 
-		vegReplicators_.Push(grass);
+		vegReplicators_.InsertNew(sector, grass);
 
 	}
 
